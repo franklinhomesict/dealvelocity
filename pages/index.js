@@ -11,55 +11,66 @@ export default function Home() {
   const [monthlyRent, setMonthlyRent]     = useState('');
   const [otherIncome, setOtherIncome]     = useState('');
 
-  const [privateLoanAmt, setPrivateLoanAmt] = useState('');
-  const [loanPoints, setLoanPoints]         = useState('0');
-  const [holdingMonths, setHoldingMonths]   = useState('4');
-  const [privateRate, setPrivateRate]       = useState('18');
+  const [privateLoanAmt, setPrivateLoanAmt]   = useState('');
+  const [loanPoints, setLoanPoints]           = useState('0');
+  const [holdingMonths, setHoldingMonths]     = useState('4');
+  const [privateRate, setPrivateRate]         = useState('18');
   const [monthlyPayments, setMonthlyPayments] = useState(false);
 
   const [refiLtv, setRefiLtv]   = useState('75');
   const [refiRate, setRefiRate] = useState('7.375');
 
-  const [vacancyPct, setVacancyPct]         = useState('8');
+  // Defaults: 15% total — vacancy 5%, capex 5%, PM 0% (HBI self-manages), maintenance 5%
+  const [vacancyPct, setVacancyPct]         = useState('5');
   const [capexPct, setCapexPct]             = useState('5');
-  const [pmPct, setPmPct]                   = useState('8');
+  const [pmPct, setPmPct]                   = useState('0');
   const [maintenancePct, setMaintenancePct] = useState('5');
 
   const [results, setResults] = useState(null);
 
   const calculate = () => {
-    const purchase  = parseFloat(purchasePrice) || 0;
-    const rehab     = parseFloat(rehabBudget)   || 0;
-    const arvVal    = parseFloat(arv)           || 0;
-    const rent      = parseFloat(monthlyRent)   || 0;
-    const other     = parseFloat(otherIncome)   || 0;
-    const months    = Math.max(parseFloat(holdingMonths) || 4, 3);
-    const privRate  = parseFloat(privateRate) / 100;
-    const points    = parseFloat(loanPoints)  / 100;
-    const ltvDec    = parseFloat(refiLtv)     / 100;
-    const rateDec   = parseFloat(refiRate)    / 100;
+    const purchase = parseFloat(purchasePrice) || 0;
+    const rehab    = parseFloat(rehabBudget)   || 0;
+    const arvVal   = parseFloat(arv)           || 0;
+    const rent     = parseFloat(monthlyRent)   || 0;
+    const other    = parseFloat(otherIncome)   || 0;
+    const months   = Math.max(parseFloat(holdingMonths) || 4, 3);
+    const privRate = parseFloat(privateRate) / 100;
+    const points   = parseFloat(loanPoints)  / 100;
+    const ltvDec   = parseFloat(refiLtv)     / 100;
+    const rateDec  = parseFloat(refiRate)    / 100;
 
+    // Purchase closing costs — HBI actuals
     const purchaseClosingCosts = 1864;
 
+    // Private money — auto-loan = purchase + rehab
     const privateLoan = parseFloat(privateLoanAmt) || (purchase + rehab);
     const pointsCost  = privateLoan * points;
     const holdingCost = privateLoan * (privRate / 12) * months;
+    const totalAllIn  = purchase + rehab + purchaseClosingCosts + pointsCost + holdingCost;
 
-    const totalAllIn = purchase + rehab + purchaseClosingCosts + pointsCost + holdingCost;
+    // Refi
+    const refiLoanAmount = arvVal * ltvDec;
+    // Closing cost formula reverse-engineered from IFW16190659 (Prescott 05/04/2026):
+    //   1% pts + 2.25% originator comp = 3.25% variable
+    //   $745 processing + $1,495 UW + ~$1,399 3rd party at closing + $400 recording = $4,039 fixed
+    //   Verified: $9,889 on $180k | $7,004 on $91.2k (Pershing)
+    const refiClosingCosts = (refiLoanAmount * 0.0325) + 4039;
+    const cashLeftIn = totalAllIn - refiLoanAmount + refiClosingCosts;
 
-    const refiLoanAmount   = arvVal * ltvDec;
-    const refiClosingCosts = (refiLoanAmount * 0.0325) + 4940;
-    const cashLeftIn       = totalAllIn - refiLoanAmount + refiClosingCosts;
-
+    // P&I
     const monthlyRate = rateDec / 12;
-    const monthlyPI   = refiLoanAmount > 0
+    const monthlyPI = refiLoanAmount > 0
       ? (refiLoanAmount * monthlyRate * Math.pow(1 + monthlyRate, 360)) / (Math.pow(1 + monthlyRate, 360) - 1)
       : 0;
 
+    // T&I from IFW16190659: taxes $216.72/mo on $240k = 1.084%/yr; ins $109.50/mo = 0.5475%/yr
+    // Using Wichita averages: 1.0% taxes, 0.62% insurance
     const monthlyTaxes = (arvVal * 0.010)  / 12;
     const monthlyIns   = (arvVal * 0.0062) / 12;
     const monthlyPITI  = monthlyPI + monthlyTaxes + monthlyIns;
 
+    // Operating expenses on base rent only (pet fees flow 100% through)
     const vacancyAmt = rent * (parseFloat(vacancyPct)     / 100);
     const capexAmt   = rent * (parseFloat(capexPct)       / 100);
     const pmAmt      = rent * (parseFloat(pmPct)          / 100);
@@ -90,9 +101,9 @@ export default function Home() {
     });
   };
 
-  const inp = { width: '100%', padding: '9px 12px', fontSize: 14, border: '1.5px solid #e5e7eb', borderRadius: 8, background: '#fff', color: '#111', outline: 'none', boxSizing: 'border-box' };
-  const lbl = { display: 'block', marginBottom: 5, fontWeight: 600, fontSize: 11, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.5 };
-  const fw  = { marginBottom: 12 };
+  const inp  = { width: '100%', padding: '9px 12px', fontSize: 14, border: '1.5px solid #e5e7eb', borderRadius: 8, background: '#fff', color: '#111', outline: 'none', boxSizing: 'border-box' };
+  const lbl  = { display: 'block', marginBottom: 5, fontWeight: 600, fontSize: 11, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.5 };
+  const fw   = { marginBottom: 12 };
   const card = { background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: '18px 20px', marginBottom: 12 };
   const sec  = { fontWeight: 700, fontSize: 11, color: '#9ca3af', marginBottom: 12, textTransform: 'uppercase', letterSpacing: 1 };
   const mLbl = { fontSize: 11, color: '#6b7280', marginBottom: 2, textTransform: 'uppercase', letterSpacing: 0.3 };
@@ -119,8 +130,8 @@ export default function Home() {
 
       <div style={{ maxWidth: 1000, margin: '0 auto', padding: '24px 20px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: results ? '400px 1fr' : '500px', gap: 24, justifyContent: 'center' }}>
-
           <div>
+
             <div style={card}>
               <div style={sec}>Property</div>
               <div style={fw}>
@@ -142,7 +153,7 @@ export default function Home() {
               </div>
               <div style={fw}>
                 <label style={lbl}>Pet Fees / Other Monthly Income</label>
-                <input style={inp} type="number" value={otherIncome} onChange={e => setOtherIncome(e.target.value)} placeholder="50  (pet fees, parking, storage)" />
+                <input style={inp} type="number" value={otherIncome} onChange={e => setOtherIncome(e.target.value)} placeholder="50  (pet fees, parking, storage - flows 100% to cash flow)" />
               </div>
             </div>
 
@@ -166,17 +177,17 @@ export default function Home() {
                   <input style={inp} type="number" value={holdingMonths} onChange={e => setHoldingMonths(e.target.value)} />
                 </div>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                 <input type="checkbox" id="mthly" checked={monthlyPayments} onChange={e => setMonthlyPayments(e.target.checked)} style={{ width: 14, height: 14, cursor: 'pointer' }} />
                 <label htmlFor="mthly" style={{ fontSize: 11, color: '#6b7280', cursor: 'pointer' }}>Monthly interest payments required (vs. accrued balloon)</label>
               </div>
-              <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>
-                Auto-loan = purchase + rehab. Points added to all-in cost. {monthlyPayments ? 'Monthly interest payments during hold period.' : 'Interest accrues and pays off at refi/sale.'}
+              <div style={{ fontSize: 11, color: '#9ca3af' }}>
+                Auto-loan = purchase + rehab. Points added to all-in cost upfront. {monthlyPayments ? 'Interest paid monthly.' : 'Interest accrues to balloon at refi/sale.'}
               </div>
             </div>
 
             <div style={card}>
-              <div style={sec}>Refi - Planted Local Lending (NON-QM 30yr)</div>
+              <div style={sec}>Refi - NON-QM 30yr Fixed</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 <div style={fw}>
                   <label style={lbl}>LTV %</label>
@@ -187,7 +198,9 @@ export default function Home() {
                   <input style={inp} type="number" value={refiRate} onChange={e => setRefiRate(e.target.value)} />
                 </div>
               </div>
-              <div style={{ fontSize: 11, color: '#9ca3af', marginTop: -4 }}>Closing costs: 3.25% of loan + $4,940 fixed (Trish Reedy actuals)</div>
+              <div style={{ fontSize: 11, color: '#9ca3af', marginTop: -4 }}>
+                Closing costs: 3.25% of loan + $4,039 fixed (reverse-engineered from IFW16190659)
+              </div>
             </div>
 
             <div style={card}>
@@ -204,6 +217,9 @@ export default function Home() {
                     <input style={inp} type="number" value={v} onChange={e => s(e.target.value)} />
                   </div>
                 ))}
+              </div>
+              <div style={{ fontSize: 11, color: '#9ca3af', marginTop: -4 }}>
+                Defaults: 5% vacancy, 5% capex, 0% PM (self-managed), 5% maintenance = 15% total
               </div>
             </div>
 
@@ -222,8 +238,7 @@ export default function Home() {
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 10, letterSpacing: 0.5, textTransform: 'uppercase' }}>Net Cash Flow</div>
                   <div style={{ color: '#fff', fontSize: 32, fontWeight: 800, marginTop: 2, letterSpacing: -1 }}>
-                    {results.netCashFlow >= 0 ? '+' : ''}{fmt(results.netCashFlow)}
-                    <span style={{ fontSize: 13, fontWeight: 500, opacity: 0.75 }}>/mo</span>
+                    {results.netCashFlow >= 0 ? '+' : ''}{fmt(results.netCashFlow)}<span style={{ fontSize: 13, fontWeight: 500, opacity: 0.75 }}>/mo</span>
                   </div>
                 </div>
               </div>
@@ -232,8 +247,8 @@ export default function Home() {
                 <div style={sec}>BRRRR Summary</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14 }}>
                   {[
-                    ['Total All-In',   fmt(results.totalAllIn), null],
-                    ['ARV',            fmt(parseFloat(arv)||0), null],
+                    ['Total All-In',   fmt(results.totalAllIn),    null],
+                    ['ARV',            fmt(parseFloat(arv)||0),    null],
                     ['Equity Capture', fmt(results.equityCap) + ' (' + pct(results.spreadPct) + ')', results.equityCap >= 0 ? '#16a34a' : '#ef4444'],
                     ['Refi Loan',      fmt(results.refiLoanAmount), null],
                     ['Refi Closing',   fmt(results.refiClosingCosts), null],
@@ -279,7 +294,7 @@ export default function Home() {
                 <Row label="Property Taxes (1.0% ARV/yr)" amount={results.monthlyTaxes} positive={false} />
                 <Row label="Insurance (0.62% ARV/yr)" amount={results.monthlyIns} positive={false} />
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#9ca3af', padding: '1px 0 4px', fontStyle: 'italic' }}>
-                  <span>PITI subtotal</span><span>-{fmt(results.monthlyPITI)}</span>
+                  <span>PITI = {fmt(results.monthlyPITI)} (matches IFW16190659)</span><span>-{fmt(results.monthlyPITI)}</span>
                 </div>
                 <div style={{ height: 1, background: '#f3f4f6', margin: '4px 0 6px' }} />
                 <Row label={'Vacancy (' + vacancyPct + '%)'} amount={results.vacancyAmt} positive={false} />
@@ -325,4 +340,4 @@ export default function Home() {
       </div>
     </div>
   );
-      }
+}
