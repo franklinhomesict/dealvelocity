@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const fmt = n => '$' + Math.round(n).toLocaleString();
 const pct = n => (n * 100).toFixed(1) + '%';
@@ -21,9 +21,76 @@ const brrrRating = (cf, cashOut) => {
   return 'Needs Work';
 };
 
+const Inp = ({ T, label, value, onChange, prefix, suffix }) => (
+  <div style={{ marginBottom:12 }}>
+    <div style={{ fontSize:11, color:T.textMuted, marginBottom:4, textTransform:'uppercase', letterSpacing:'0.05em' }}>{label}</div>
+    <div style={{ display:'flex', alignItems:'center', background:T.inp, border:'1px solid '+T.inpBorder, borderRadius:8, overflow:'hidden' }}>
+      {prefix && <span style={{ padding:'0 10px', color:T.textMuted, fontSize:13 }}>{prefix}</span>}
+      <input type="number" value={value} onChange={e=>onChange(e.target.value)} placeholder="0"
+        style={{ flex:1, background:'transparent', border:'none', outline:'none', padding:'9px 10px', color:T.inpText, fontSize:14 }} />
+      {suffix && <span style={{ padding:'0 10px', color:T.textMuted, fontSize:13 }}>{suffix}</span>}
+    </div>
+  </div>
+);
+
+const MaoCard = ({ title, subtitle, scenarios, vsMAO, footer }) => (
+  <div style={{ background:'#0a0a0a', border:'1px solid #1f1f1f', borderRadius:12, padding:'18px 20px', marginBottom:14 }}>
+    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:14 }}>
+      <div>
+        <div style={{ fontSize:13, fontWeight:600, color:'#e5e7eb' }}>{title}</div>
+        {subtitle && <div style={{ fontSize:11, color:'#6b7280', marginTop:2 }}>{subtitle}</div>}
+      </div>
+      {vsMAO !== null && vsMAO !== undefined && (
+        <div style={{ background:vsMAO<=0?'#052e16':'#2d1010', border:'1px solid '+(vsMAO<=0?'#166534':'#7f1d1d'), borderRadius:8, padding:'4px 10px', textAlign:'center' }}>
+          <div style={{ fontSize:10, color:vsMAO<=0?'#4ade80':'#f87171', textTransform:'uppercase' }}>Asking vs Target MAO</div>
+          <div style={{ fontSize:15, fontWeight:700, color:vsMAO<=0?'#22c55e':'#ef4444' }}>
+            {vsMAO<=0 ? fmt(Math.abs(vsMAO))+' under' : fmt(vsMAO)+' over'}
+          </div>
+        </div>
+      )}
+    </div>
+    <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8 }}>
+      {scenarios.map((s,i)=>(
+        <div key={i} style={{ background:'#111', border:'1px solid #1a1a1a', borderRadius:8, padding:'10px 12px' }}>
+          <div style={{ fontSize:10, color:'#6b7280', textTransform:'uppercase', letterSpacing:'0.04em', marginBottom:4 }}>{s.label}</div>
+          <div style={{ fontSize:18, fontWeight:700, color:s.value>0?'#22c55e':'#ef4444' }}>{s.value>0?fmt(s.value):'N/A'}</div>
+          {s.note && <div style={{ fontSize:10, color:'#4b5563', marginTop:3 }}>{s.note}</div>}
+        </div>
+      ))}
+    </div>
+    {footer && <div style={{ fontSize:11, color:'#4b5563', marginTop:10 }}>{footer}</div>}
+  </div>
+);
+
+const Row = ({ T, label, value, green, red, bold }) => (
+  <div style={{ display:'flex', justifyContent:'space-between', padding:'7px 0', borderBottom:'1px solid '+T.rowBorder }}>
+    <span style={{ fontSize:13, color:T.textMuted }}>{label}</span>
+    <span style={{ fontSize:14, fontWeight:bold?700:500, color:green?'#22c55e':red?'#ef4444':T.text }}>{value}</span>
+  </div>
+);
+
+const Card = ({ T, children, style }) => (
+  <div style={{ background:T.card, border:'1px solid '+T.cardBorder, borderRadius:12, padding:20, marginBottom:14, ...style }}>{children}</div>
+);
+
+const Sec = ({ children }) => (
+  <div style={{ fontSize:11, fontWeight:600, color:'#6b7280', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:14 }}>{children}</div>
+);
+
+const Btn = ({ onClick, children }) => (
+  <button onClick={onClick} style={{ width:'100%', padding:14, background:'#22c55e', color:'#000', border:'none', borderRadius:10, fontSize:15, fontWeight:700, cursor:'pointer', marginTop:4 }}>{children}</button>
+);
+
 export default function Home() {
   const [tab, setTab] = useState('brrrr');
   const [dark, setDark] = useState(true);
+  const [mobile, setMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
 
   const [purchasePrice,  setPurchasePrice]  = useState('');
   const [rehabBudget,    setRehabBudget]    = useState('');
@@ -209,114 +276,54 @@ export default function Home() {
     inp:'#ffffff', inpBorder:'#d1d5db', inpText:'#111827', rowBorder:'#f3f4f6'
   };
 
-  const Inp = ({ label, value, onChange, prefix, suffix }) => (
-    <div style={{ marginBottom:12 }}>
-      <div style={{ fontSize:11, color:T.textMuted, marginBottom:4, textTransform:'uppercase', letterSpacing:'0.05em' }}>{label}</div>
-      <div style={{ display:'flex', alignItems:'center', background:T.inp, border:'1px solid '+T.inpBorder, borderRadius:8, overflow:'hidden' }}>
-        {prefix && <span style={{ padding:'0 10px', color:T.textMuted, fontSize:13 }}>{prefix}</span>}
-        <input type="number" value={value} onChange={e=>onChange(e.target.value)} placeholder="0"
-          style={{ flex:1, background:'transparent', border:'none', outline:'none', padding:'9px 10px', color:T.inpText, fontSize:14 }} />
-        {suffix && <span style={{ padding:'0 10px', color:T.textMuted, fontSize:13 }}>{suffix}</span>}
-      </div>
-    </div>
-  );
-
-  const MaoCard = ({ title, subtitle, scenarios, vsMAO, footer }) => (
-    <div style={{ background:'#0a0a0a', border:'1px solid #1f1f1f', borderRadius:12, padding:'18px 20px', marginBottom:14 }}>
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:14 }}>
-        <div>
-          <div style={{ fontSize:13, fontWeight:600, color:'#e5e7eb' }}>{title}</div>
-          {subtitle && <div style={{ fontSize:11, color:'#6b7280', marginTop:2 }}>{subtitle}</div>}
-        </div>
-        {vsMAO !== null && vsMAO !== undefined && (
-          <div style={{ background:vsMAO<=0?'#052e16':'#2d1010', border:'1px solid '+(vsMAO<=0?'#166534':'#7f1d1d'), borderRadius:8, padding:'4px 10px', textAlign:'center' }}>
-            <div style={{ fontSize:10, color:vsMAO<=0?'#4ade80':'#f87171', textTransform:'uppercase' }}>Asking vs Target MAO</div>
-            <div style={{ fontSize:15, fontWeight:700, color:vsMAO<=0?'#22c55e':'#ef4444' }}>
-              {vsMAO<=0 ? fmt(Math.abs(vsMAO))+' under' : fmt(vsMAO)+' over'}
-            </div>
-          </div>
-        )}
-      </div>
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8 }}>
-        {scenarios.map((s,i)=>(
-          <div key={i} style={{ background:'#111', border:'1px solid #1a1a1a', borderRadius:8, padding:'10px 12px' }}>
-            <div style={{ fontSize:10, color:'#6b7280', textTransform:'uppercase', letterSpacing:'0.04em', marginBottom:4 }}>{s.label}</div>
-            <div style={{ fontSize:18, fontWeight:700, color:s.value>0?'#22c55e':'#ef4444' }}>{s.value>0?fmt(s.value):'N/A'}</div>
-            {s.note && <div style={{ fontSize:10, color:'#4b5563', marginTop:3 }}>{s.note}</div>}
-          </div>
-        ))}
-      </div>
-      {footer && <div style={{ fontSize:11, color:'#4b5563', marginTop:10 }}>{footer}</div>}
-    </div>
-  );
-
-  const Row = ({ label, value, green, red, bold }) => (
-    <div style={{ display:'flex', justifyContent:'space-between', padding:'7px 0', borderBottom:'1px solid '+T.rowBorder }}>
-      <span style={{ fontSize:13, color:T.textMuted }}>{label}</span>
-      <span style={{ fontSize:14, fontWeight:bold?700:500, color:green?'#22c55e':red?'#ef4444':T.text }}>{value}</span>
-    </div>
-  );
-
-  const Card = ({ children, style }) => (
-    <div style={{ background:T.card, border:'1px solid '+T.cardBorder, borderRadius:12, padding:20, marginBottom:14, ...style }}>{children}</div>
-  );
-
-  const Sec = ({ children }) => (
-    <div style={{ fontSize:11, fontWeight:600, color:'#6b7280', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:14 }}>{children}</div>
-  );
-
-  const Btn = ({ onClick, children }) => (
-    <button onClick={onClick} style={{ width:'100%', padding:14, background:'#22c55e', color:'#000', border:'none', borderRadius:10, fontSize:15, fontWeight:700, cursor:'pointer', marginTop:4 }}>{children}</button>
-  );
-
   return (
     <div style={{ minHeight:'100vh', background:T.page, color:T.text, fontFamily:'-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif' }}>
-      <div style={{ background:'#111', borderBottom:'1px solid #1f1f1f', padding:'0 24px', display:'flex', alignItems:'center', justifyContent:'space-between', height:56 }}>
-        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-          <div style={{ width:28, height:28, background:'#22c55e', borderRadius:6, display:'flex', alignItems:'center', justifyContent:'center' }}>
+      <div style={{ background:'#111', borderBottom:'1px solid #1f1f1f', padding:'0 12px', display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', minHeight:56 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 0' }}>
+          <div style={{ width:28, height:28, background:'#22c55e', borderRadius:6, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
             <span style={{ fontSize:14 }}>&#x26A1;</span>
           </div>
           <span style={{ fontSize:16, fontWeight:700, color:'#fff' }}>DealVelocity</span>
         </div>
-        <div style={{ display:'flex', alignItems:'center', gap:4 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:0, overflowX:'auto', WebkitOverflowScrolling:'touch' }}>
           {[['brrrr','BRRRR'],['flip','Flip'],['wholesale','Wholesale'],['creative','Creative / Wrap']].map(([id,label])=>(
-            <button key={id} onClick={()=>setTab(id)} style={{ background:'none', border:'none', cursor:'pointer', padding:'18px 14px', color:tab===id?'#22c55e':'#6b7280', borderBottom:tab===id?'2px solid #22c55e':'2px solid transparent', fontSize:13, fontWeight:tab===id?600:400 }}>{label}</button>
+            <button key={id} onClick={()=>setTab(id)} style={{ background:'none', border:'none', cursor:'pointer', padding:mobile?'12px 10px':'18px 14px', color:tab===id?'#22c55e':'#6b7280', borderBottom:tab===id?'2px solid #22c55e':'2px solid transparent', fontSize:mobile?12:13, fontWeight:tab===id?600:400, whiteSpace:'nowrap' }}>{label}</button>
           ))}
-          <button onClick={()=>setDark(d=>!d)} style={{ background:dark?'#222':'#e5e7eb', border:'none', borderRadius:20, padding:'5px 14px', color:dark?'#e5e7eb':'#374151', fontSize:12, cursor:'pointer', marginLeft:8 }}>
+          <button onClick={()=>setDark(d=>!d)} style={{ background:dark?'#222':'#e5e7eb', border:'none', borderRadius:20, padding:'5px 10px', color:dark?'#e5e7eb':'#374151', fontSize:12, cursor:'pointer', marginLeft:6, whiteSpace:'nowrap' }}>
             {dark?'Light':'Dark'}
           </button>
         </div>
       </div>
 
-      <div style={{ maxWidth:1200, margin:'0 auto', padding:'24px 20px' }}>
+      <div style={{ maxWidth:1200, margin:'0 auto', padding:mobile?'16px 12px':'24px 20px' }}>
 
         {tab==='brrrr' && (
-          <div style={{ display:'grid', gridTemplateColumns:'360px 1fr', gap:20 }}>
+          <div style={{ display:'grid', gridTemplateColumns:mobile?'1fr':'360px 1fr', gap:20 }}>
             <div>
-              <Card><Sec>Property</Sec>
-                <Inp label="Purchase Price" value={purchasePrice} onChange={setPurchasePrice} prefix="$" />
-                <Inp label="Rehab Budget" value={rehabBudget} onChange={setRehabBudget} prefix="$" />
-                <Inp label="After Repair Value (ARV)" value={arv} onChange={setArv} prefix="$" />
+              <Card T={T}><Sec>Property</Sec>
+                <Inp T={T} label="Purchase Price" value={purchasePrice} onChange={setPurchasePrice} prefix="$" />
+                <Inp T={T} label="Rehab Budget" value={rehabBudget} onChange={setRehabBudget} prefix="$" />
+                <Inp T={T} label="After Repair Value (ARV)" value={arv} onChange={setArv} prefix="$" />
               </Card>
-              <Card><Sec>Private Money</Sec>
-                <Inp label="Loan Amount (blank = purchase+rehab)" value={privateLoanAmt} onChange={setPrivateLoanAmt} prefix="$" />
-                <Inp label="Interest Rate" value={privateRate} onChange={setPrivateRate} suffix="%" />
-                <Inp label="Points" value={loanPoints} onChange={setLoanPoints} suffix="%" />
-                <Inp label="Hold Period" value={holdingMonths} onChange={setHoldingMonths} suffix="mo" />
+              <Card T={T}><Sec>Private Money</Sec>
+                <Inp T={T} label="Loan Amount (blank = purchase+rehab)" value={privateLoanAmt} onChange={setPrivateLoanAmt} prefix="$" />
+                <Inp T={T} label="Interest Rate" value={privateRate} onChange={setPrivateRate} suffix="%" />
+                <Inp T={T} label="Points" value={loanPoints} onChange={setLoanPoints} suffix="%" />
+                <Inp T={T} label="Hold Period" value={holdingMonths} onChange={setHoldingMonths} suffix="mo" />
               </Card>
-              <Card><Sec>Refinance</Sec>
-                <Inp label="Refi Rate" value={refiRate} onChange={setRefiRate} suffix="%" />
-                <Inp label="Target Cash-Out" value={targetCashOut} onChange={setTargetCashOut} prefix="$" />
+              <Card T={T}><Sec>Refinance</Sec>
+                <Inp T={T} label="Refi Rate" value={refiRate} onChange={setRefiRate} suffix="%" />
+                <Inp T={T} label="Target Cash-Out" value={targetCashOut} onChange={setTargetCashOut} prefix="$" />
               </Card>
-              <Card><Sec>Rental Income</Sec>
-                <Inp label="Monthly Rent" value={monthlyRent} onChange={setMonthlyRent} prefix="$" />
-                <Inp label="Other Income" value={otherIncome} onChange={setOtherIncome} prefix="$" />
+              <Card T={T}><Sec>Rental Income</Sec>
+                <Inp T={T} label="Monthly Rent" value={monthlyRent} onChange={setMonthlyRent} prefix="$" />
+                <Inp T={T} label="Other Income" value={otherIncome} onChange={setOtherIncome} prefix="$" />
               </Card>
-              <Card><Sec>Operating Expenses</Sec>
-                <Inp label="Vacancy" value={vacancyPct} onChange={setVacancyPct} suffix="%" />
-                <Inp label="CapEx" value={capexPct} onChange={setCapexPct} suffix="%" />
-                <Inp label="Property Mgmt" value={pmPct} onChange={setPmPct} suffix="%" />
-                <Inp label="Maintenance" value={maintenancePct} onChange={setMaintenancePct} suffix="%" />
+              <Card T={T}><Sec>Operating Expenses</Sec>
+                <Inp T={T} label="Vacancy" value={vacancyPct} onChange={setVacancyPct} suffix="%" />
+                <Inp T={T} label="CapEx" value={capexPct} onChange={setCapexPct} suffix="%" />
+                <Inp T={T} label="Property Mgmt" value={pmPct} onChange={setPmPct} suffix="%" />
+                <Inp T={T} label="Maintenance" value={maintenancePct} onChange={setMaintenancePct} suffix="%" />
               </Card>
               <Btn onClick={analyzeBRRRR}>Analyze BRRRR</Btn>
             </div>
@@ -335,48 +342,48 @@ export default function Home() {
                     ]}
                     footer="MAO = (refi loan - refi closing - purchase closing - target) / hold factor - rehab"
                   />
-                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
-                    <Card><Sec>75% Cash-Out Refi</Sec>
-                      <Row label="Refi Loan (75%)" value={fmt(results.refiLoan75)} />
-                      <Row label="Est. Refi Closing" value={fmt(results.refiClosing75)} />
-                      <Row label="Cash Left In" value={fmt(results.cashLeftIn75)} green={results.cashLeftIn75<=0} red={results.cashLeftIn75>0} bold />
-                      <Row label="Monthly P&I" value={fmt(results.pi75)} />
-                      <Row label="PITI" value={fmt(results.piti75)} />
-                      <Row label="Net Cash Flow" value={fmt(results.netCF75)} green={results.netCF75>=0} red={results.netCF75<0} bold />
-                      {results.coC75!==null && <Row label="Cash-on-Cash" value={pct(results.coC75)} green={results.coC75>=0.08} />}
+                  <div style={{ display:'grid', gridTemplateColumns:mobile?'1fr':'1fr 1fr', gap:14 }}>
+                    <Card T={T}><Sec>75% Cash-Out Refi</Sec>
+                      <Row T={T} label="Refi Loan (75%)" value={fmt(results.refiLoan75)} />
+                      <Row T={T} label="Est. Refi Closing" value={fmt(results.refiClosing75)} />
+                      <Row T={T} label="Cash Left In" value={fmt(results.cashLeftIn75)} green={results.cashLeftIn75<=0} red={results.cashLeftIn75>0} bold />
+                      <Row T={T} label="Monthly P&I" value={fmt(results.pi75)} />
+                      <Row T={T} label="PITI" value={fmt(results.piti75)} />
+                      <Row T={T} label="Net Cash Flow" value={fmt(results.netCF75)} green={results.netCF75>=0} red={results.netCF75<0} bold />
+                      {results.coC75!==null && <Row T={T} label="Cash-on-Cash" value={pct(results.coC75)} green={results.coC75>=0.08} />}
                       <div style={{ marginTop:10, padding:'8px 12px', background:'#0f2218', borderRadius:8, textAlign:'center' }}>
                         <div style={{ fontSize:11, color:'#4ade80' }}>{brrrRating(results.netCF75, results.cashLeftIn75<=0)}</div>
                       </div>
                     </Card>
-                    <Card><Sec>80% Rate & Term Refi</Sec>
-                      <Row label="Refi Loan (80%)" value={fmt(results.refiLoan80)} />
-                      <Row label="Est. Refi Closing" value={fmt(results.refiClosing80)} />
-                      <Row label="Cash Left In" value={fmt(results.cashLeftIn80)} green={results.cashLeftIn80<=0} red={results.cashLeftIn80>0} bold />
-                      <Row label="Monthly P&I" value={fmt(results.pi80)} />
-                      <Row label="PITI" value={fmt(results.piti80)} />
-                      <Row label="Net Cash Flow" value={fmt(results.netCF80)} green={results.netCF80>=0} red={results.netCF80<0} bold />
-                      {results.coC80!==null && <Row label="Cash-on-Cash" value={pct(results.coC80)} green={results.coC80>=0.08} />}
+                    <Card T={T}><Sec>80% Rate & Term Refi</Sec>
+                      <Row T={T} label="Refi Loan (80%)" value={fmt(results.refiLoan80)} />
+                      <Row T={T} label="Est. Refi Closing" value={fmt(results.refiClosing80)} />
+                      <Row T={T} label="Cash Left In" value={fmt(results.cashLeftIn80)} green={results.cashLeftIn80<=0} red={results.cashLeftIn80>0} bold />
+                      <Row T={T} label="Monthly P&I" value={fmt(results.pi80)} />
+                      <Row T={T} label="PITI" value={fmt(results.piti80)} />
+                      <Row T={T} label="Net Cash Flow" value={fmt(results.netCF80)} green={results.netCF80>=0} red={results.netCF80<0} bold />
+                      {results.coC80!==null && <Row T={T} label="Cash-on-Cash" value={pct(results.coC80)} green={results.coC80>=0.08} />}
                       <div style={{ marginTop:10, padding:'8px 12px', background:'#0f2218', borderRadius:8, textAlign:'center' }}>
                         <div style={{ fontSize:11, color:'#4ade80' }}>{brrrRating(results.netCF80, results.cashLeftIn80<=0)}</div>
                       </div>
                     </Card>
                   </div>
-                  <Card><Sec>All-In Cost Summary</Sec>
-                    <Row label="Purchase Price" value={fmt(results.purchase)} />
-                    <Row label="Rehab Budget" value={fmt(results.rehab)} />
-                    <Row label="Purchase Closing" value={fmt(PURCHASE_CLOSING)} />
-                    <Row label="Points Cost" value={fmt(results.pointsCost)} />
-                    <Row label="Holding Cost" value={fmt(results.holdingCost)} />
-                    <Row label="Total All-In" value={fmt(results.totalAllIn)} bold />
+                  <Card T={T}><Sec>All-In Cost Summary</Sec>
+                    <Row T={T} label="Purchase Price" value={fmt(results.purchase)} />
+                    <Row T={T} label="Rehab Budget" value={fmt(results.rehab)} />
+                    <Row T={T} label="Purchase Closing" value={fmt(PURCHASE_CLOSING)} />
+                    <Row T={T} label="Points Cost" value={fmt(results.pointsCost)} />
+                    <Row T={T} label="Holding Cost" value={fmt(results.holdingCost)} />
+                    <Row T={T} label="Total All-In" value={fmt(results.totalAllIn)} bold />
                   </Card>
-                  <Card><Sec>Monthly Expense Detail</Sec>
-                    <Row label="Gross Income" value={fmt(results.grossIncome)} />
-                    <Row label="Taxes (est.)" value={fmt(results.taxes)} />
-                    <Row label="Insurance (est.)" value={fmt(results.insurance)} />
-                    <Row label="Vacancy" value={fmt(results.vacancyAmt)} />
-                    <Row label="CapEx" value={fmt(results.capexAmt)} />
-                    <Row label="Prop. Mgmt" value={fmt(results.pmAmt)} />
-                    <Row label="Maintenance" value={fmt(results.maintAmt)} />
+                  <Card T={T}><Sec>Monthly Expense Detail</Sec>
+                    <Row T={T} label="Gross Income" value={fmt(results.grossIncome)} />
+                    <Row T={T} label="Taxes (est.)" value={fmt(results.taxes)} />
+                    <Row T={T} label="Insurance (est.)" value={fmt(results.insurance)} />
+                    <Row T={T} label="Vacancy" value={fmt(results.vacancyAmt)} />
+                    <Row T={T} label="CapEx" value={fmt(results.capexAmt)} />
+                    <Row T={T} label="Prop. Mgmt" value={fmt(results.pmAmt)} />
+                    <Row T={T} label="Maintenance" value={fmt(results.maintAmt)} />
                   </Card>
                 </>
               )}
@@ -385,22 +392,22 @@ export default function Home() {
         )}
 
         {tab==='flip' && (
-          <div style={{ display:'grid', gridTemplateColumns:'360px 1fr', gap:20 }}>
+          <div style={{ display:'grid', gridTemplateColumns:mobile?'1fr':'360px 1fr', gap:20 }}>
             <div>
-              <Card><Sec>Property</Sec>
-                <Inp label="Purchase Price" value={fPurchase} onChange={setFPurchase} prefix="$" />
-                <Inp label="Rehab Budget" value={fRehab} onChange={setFRehab} prefix="$" />
-                <Inp label="After Repair Value (ARV)" value={fArv} onChange={setFArv} prefix="$" />
+              <Card T={T}><Sec>Property</Sec>
+                <Inp T={T} label="Purchase Price" value={fPurchase} onChange={setFPurchase} prefix="$" />
+                <Inp T={T} label="Rehab Budget" value={fRehab} onChange={setFRehab} prefix="$" />
+                <Inp T={T} label="After Repair Value (ARV)" value={fArv} onChange={setFArv} prefix="$" />
               </Card>
-              <Card><Sec>Private Money</Sec>
-                <Inp label="Loan Amount (blank = purchase+rehab)" value={fPrivateLoan} onChange={setFPrivateLoan} prefix="$" />
-                <Inp label="Interest Rate" value={fRate} onChange={setFRate} suffix="%" />
-                <Inp label="Points" value={fPoints} onChange={setFPoints} suffix="%" />
-                <Inp label="Hold Period" value={fMonths} onChange={setFMonths} suffix="mo" />
+              <Card T={T}><Sec>Private Money</Sec>
+                <Inp T={T} label="Loan Amount (blank = purchase+rehab)" value={fPrivateLoan} onChange={setFPrivateLoan} prefix="$" />
+                <Inp T={T} label="Interest Rate" value={fRate} onChange={setFRate} suffix="%" />
+                <Inp T={T} label="Points" value={fPoints} onChange={setFPoints} suffix="%" />
+                <Inp T={T} label="Hold Period" value={fMonths} onChange={setFMonths} suffix="mo" />
               </Card>
-              <Card><Sec>Sale</Sec>
-                <Inp label="Selling Costs %" value={fSellingCosts} onChange={setFSellingCosts} suffix="%" />
-                <Inp label="Target Profit" value={fTargetProfit} onChange={setFTargetProfit} prefix="$" />
+              <Card T={T}><Sec>Sale</Sec>
+                <Inp T={T} label="Selling Costs %" value={fSellingCosts} onChange={setFSellingCosts} suffix="%" />
+                <Inp T={T} label="Target Profit" value={fTargetProfit} onChange={setFTargetProfit} prefix="$" />
               </Card>
               <Btn onClick={analyzeFlip}>Analyze Flip</Btn>
             </div>
@@ -419,22 +426,22 @@ export default function Home() {
                     ]}
                     footer="Target MAO = (net proceeds - purchase closing - target profit) / hold factor - rehab"
                   />
-                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
-                    <Card><Sec>P&amp;L Summary</Sec>
-                      <Row label="Sale Price (ARV)" value={fmt(fResults.arvVal)} />
-                      <Row label="Selling Costs" value={fmt(fResults.sellingCosts)} />
-                      <Row label="Total All-In" value={fmt(fResults.totalAllIn)} />
-                      <Row label="Net Profit" value={fmt(fResults.netProfit)} green={fResults.netProfit>=0} red={fResults.netProfit<0} bold />
-                      <Row label="ROI" value={pct(fResults.roi)} green={fResults.roi>=0.15} />
-                      <Row label="Annualized ROI" value={pct(fResults.annualizedRoi)} green={fResults.annualizedRoi>=0.20} />
+                  <div style={{ display:'grid', gridTemplateColumns:mobile?'1fr':'1fr 1fr', gap:14 }}>
+                    <Card T={T}><Sec>P&amp;L Summary</Sec>
+                      <Row T={T} label="Sale Price (ARV)" value={fmt(fResults.arvVal)} />
+                      <Row T={T} label="Selling Costs" value={fmt(fResults.sellingCosts)} />
+                      <Row T={T} label="Total All-In" value={fmt(fResults.totalAllIn)} />
+                      <Row T={T} label="Net Profit" value={fmt(fResults.netProfit)} green={fResults.netProfit>=0} red={fResults.netProfit<0} bold />
+                      <Row T={T} label="ROI" value={pct(fResults.roi)} green={fResults.roi>=0.15} />
+                      <Row T={T} label="Annualized ROI" value={pct(fResults.annualizedRoi)} green={fResults.annualizedRoi>=0.20} />
                     </Card>
-                    <Card><Sec>Cost Breakdown</Sec>
-                      <Row label="Purchase Price" value={fmt(fResults.purchase)} />
-                      <Row label="Rehab Budget" value={fmt(fResults.rehab)} />
-                      <Row label="Purchase Closing" value={fmt(PURCHASE_CLOSING)} />
-                      <Row label="Points Cost" value={fmt(fResults.pointsCost)} />
-                      <Row label="Holding Cost" value={fmt(fResults.holdingCost)} />
-                      <Row label="Total All-In" value={fmt(fResults.totalAllIn)} bold />
+                    <Card T={T}><Sec>Cost Breakdown</Sec>
+                      <Row T={T} label="Purchase Price" value={fmt(fResults.purchase)} />
+                      <Row T={T} label="Rehab Budget" value={fmt(fResults.rehab)} />
+                      <Row T={T} label="Purchase Closing" value={fmt(PURCHASE_CLOSING)} />
+                      <Row T={T} label="Points Cost" value={fmt(fResults.pointsCost)} />
+                      <Row T={T} label="Holding Cost" value={fmt(fResults.holdingCost)} />
+                      <Row T={T} label="Total All-In" value={fmt(fResults.totalAllIn)} bold />
                     </Card>
                   </div>
                 </>
@@ -444,22 +451,22 @@ export default function Home() {
         )}
 
         {tab==='wholesale' && (
-          <div style={{ display:'grid', gridTemplateColumns:'360px 1fr', gap:20 }}>
+          <div style={{ display:'grid', gridTemplateColumns:mobile?'1fr':'360px 1fr', gap:20 }}>
             <div>
-              <Card><Sec>Property</Sec>
-                <Inp label="ARV" value={wArv} onChange={setWArv} prefix="$" />
-                <Inp label="Buyer's Estimated Rehab" value={wBuyerRehab} onChange={setWBuyerRehab} prefix="$" />
-                <Inp label="Your Contract Price" value={wContractPrice} onChange={setWContractPrice} prefix="$" />
+              <Card T={T}><Sec>Property</Sec>
+                <Inp T={T} label="ARV" value={wArv} onChange={setWArv} prefix="$" />
+                <Inp T={T} label="Buyer's Estimated Rehab" value={wBuyerRehab} onChange={setWBuyerRehab} prefix="$" />
+                <Inp T={T} label="Your Contract Price" value={wContractPrice} onChange={setWContractPrice} prefix="$" />
               </Card>
-              <Card><Sec>BRRRR Buyer Assumptions</Sec>
-                <Inp label="Buyer's Target Cash-Out" value={wTargetCO} onChange={setWTargetCO} prefix="$" />
-                <Inp label="Buyer's Private Money Rate" value={wBuyerRate} onChange={setWBuyerRate} suffix="%" />
-                <Inp label="Buyer's Points" value={wBuyerPoints} onChange={setWBuyerPoints} suffix="%" />
-                <Inp label="Buyer's Hold Period" value={wBuyerMonths} onChange={setWBuyerMonths} suffix="mo" />
+              <Card T={T}><Sec>BRRRR Buyer Assumptions</Sec>
+                <Inp T={T} label="Buyer's Target Cash-Out" value={wTargetCO} onChange={setWTargetCO} prefix="$" />
+                <Inp T={T} label="Buyer's Private Money Rate" value={wBuyerRate} onChange={setWBuyerRate} suffix="%" />
+                <Inp T={T} label="Buyer's Points" value={wBuyerPoints} onChange={setWBuyerPoints} suffix="%" />
+                <Inp T={T} label="Buyer's Hold Period" value={wBuyerMonths} onChange={setWBuyerMonths} suffix="mo" />
               </Card>
-              <Card><Sec>Flip Buyer Assumptions</Sec>
-                <Inp label="Buyer's Target Profit" value={wFlipProfit} onChange={setWFlipProfit} prefix="$" />
-                <Inp label="Buyer's Selling Costs" value={wFlipSelling} onChange={setWFlipSelling} suffix="%" />
+              <Card T={T}><Sec>Flip Buyer Assumptions</Sec>
+                <Inp T={T} label="Buyer's Target Profit" value={wFlipProfit} onChange={setWFlipProfit} prefix="$" />
+                <Inp T={T} label="Buyer's Selling Costs" value={wFlipSelling} onChange={setWFlipSelling} suffix="%" />
               </Card>
               <Btn onClick={analyzeWholesale}>Calculate Assignment Fee</Btn>
             </div>
@@ -468,14 +475,14 @@ export default function Home() {
                 <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:300, color:T.textFaint, fontSize:14 }}>Fill in the inputs and click Calculate</div>
               ) : (
                 <>
-                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14, marginBottom:14 }}>
+                  <div style={{ display:'grid', gridTemplateColumns:mobile?'1fr':'1fr 1fr', gap:14, marginBottom:14 }}>
                     <div style={{ background:'#0a0a0a', border:'1px solid #1f1f1f', borderRadius:12, padding:'18px 20px' }}>
                       <div style={{ fontSize:12, color:'#9ca3af', marginBottom:10 }}>BRRRR Buyer MAO</div>
                       <div style={{ fontSize:28, fontWeight:800, color:wResults.brrrMAO>0?'#22c55e':'#ef4444', marginBottom:6 }}>{wResults.brrrMAO>0?fmt(wResults.brrrMAO):'N/A'}</div>
                       <div style={{ fontSize:12, color:'#6b7280', marginBottom:12 }}>at {fmt(wResults.targetCO)} cash-out target</div>
-                      <Row label="Break-Even MAO" value={wResults.brrrMAOzero>0?fmt(wResults.brrrMAOzero):'N/A'} />
-                      <Row label="75% Refi Loan" value={fmt(wResults.refiLoan75)} />
-                      <Row label="Est. Refi Closing" value={fmt(wResults.refiClosing75)} />
+                      <Row T={T} label="Break-Even MAO" value={wResults.brrrMAOzero>0?fmt(wResults.brrrMAOzero):'N/A'} />
+                      <Row T={T} label="75% Refi Loan" value={fmt(wResults.refiLoan75)} />
+                      <Row T={T} label="Est. Refi Closing" value={fmt(wResults.refiClosing75)} />
                       {wResults.brrrAssignment!==null && (
                         <div style={{ marginTop:12, padding:'10px 14px', background:wResults.brrrAssignment>=0?'#052e16':'#2d1010', borderRadius:8, textAlign:'center' }}>
                           <div style={{ fontSize:11, color:'#9ca3af' }}>Your Assignment Fee</div>
@@ -487,8 +494,8 @@ export default function Home() {
                       <div style={{ fontSize:12, color:'#9ca3af', marginBottom:10 }}>Flip Buyer MAO</div>
                       <div style={{ fontSize:28, fontWeight:800, color:wResults.flipMAO>0?'#22c55e':'#ef4444', marginBottom:6 }}>{wResults.flipMAO>0?fmt(wResults.flipMAO):'N/A'}</div>
                       <div style={{ fontSize:12, color:'#6b7280', marginBottom:12 }}>at {fmt(wResults.flipTarget)} profit target</div>
-                      <Row label="Break-Even MAO" value={wResults.flipMAOzero>0?fmt(wResults.flipMAOzero):'N/A'} />
-                      <Row label="70% Rule MAO" value={wResults.flip70>0?fmt(wResults.flip70):'N/A'} />
+                      <Row T={T} label="Break-Even MAO" value={wResults.flipMAOzero>0?fmt(wResults.flipMAOzero):'N/A'} />
+                      <Row T={T} label="70% Rule MAO" value={wResults.flip70>0?fmt(wResults.flip70):'N/A'} />
                       {wResults.flipAssignment!==null && (
                         <div style={{ marginTop:12, padding:'10px 14px', background:wResults.flipAssignment>=0?'#052e16':'#2d1010', borderRadius:8, textAlign:'center' }}>
                           <div style={{ fontSize:11, color:'#9ca3af' }}>Your Assignment Fee</div>
@@ -497,7 +504,7 @@ export default function Home() {
                       )}
                     </div>
                   </div>
-                  <Card><Sec>Conservative Offer (Lower of Both MAOs)</Sec>
+                  <Card T={T}><Sec>Conservative Offer (Lower of Both MAOs)</Sec>
                     <div style={{ fontSize:32, fontWeight:800, color:wResults.bestMAO<Infinity&&wResults.bestMAO>0?'#22c55e':'#ef4444' }}>
                       {wResults.bestMAO<Infinity&&wResults.bestMAO>0?fmt(wResults.bestMAO):'N/A'}
                     </div>
@@ -510,18 +517,18 @@ export default function Home() {
         )}
 
         {tab==='creative' && (
-          <div style={{ display:'grid', gridTemplateColumns:'360px 1fr', gap:20 }}>
+          <div style={{ display:'grid', gridTemplateColumns:mobile?'1fr':'360px 1fr', gap:20 }}>
             <div>
-              <Card><Sec>Seller's Existing Loan</Sec>
-                <Inp label="Remaining Loan Balance" value={cSellerBalance} onChange={setCSellerBalance} prefix="$" />
-                <Inp label="Seller's Monthly P&I" value={cSellerPI} onChange={setCSellerPI} prefix="$" />
-                <Inp label="Down Payment to Seller" value={cDownToSeller} onChange={setCDownToSeller} prefix="$" />
+              <Card T={T}><Sec>Seller's Existing Loan</Sec>
+                <Inp T={T} label="Remaining Loan Balance" value={cSellerBalance} onChange={setCSellerBalance} prefix="$" />
+                <Inp T={T} label="Seller's Monthly P&I" value={cSellerPI} onChange={setCSellerPI} prefix="$" />
+                <Inp T={T} label="Down Payment to Seller" value={cDownToSeller} onChange={setCDownToSeller} prefix="$" />
               </Card>
-              <Card><Sec>Wrap / Subject-To Terms</Sec>
-                <Inp label="Wrap Loan Amount (blank = seller balance)" value={cWrapLoan} onChange={setCWrapLoan} prefix="$" />
-                <Inp label="Wrap Rate (buyer pays)" value={cWrapRate} onChange={setCWrapRate} suffix="%" />
-                <Inp label="Down Payment from Your Buyer" value={cBuyerDown} onChange={setCBuyerDown} prefix="$" />
-                <Inp label="Projected Hold Period" value={cHoldYrs} onChange={setCHoldYrs} suffix="yrs" />
+              <Card T={T}><Sec>Wrap / Subject-To Terms</Sec>
+                <Inp T={T} label="Wrap Loan Amount (blank = seller balance)" value={cWrapLoan} onChange={setCWrapLoan} prefix="$" />
+                <Inp T={T} label="Wrap Rate (buyer pays)" value={cWrapRate} onChange={setCWrapRate} suffix="%" />
+                <Inp T={T} label="Down Payment from Your Buyer" value={cBuyerDown} onChange={setCBuyerDown} prefix="$" />
+                <Inp T={T} label="Projected Hold Period" value={cHoldYrs} onChange={setCHoldYrs} suffix="yrs" />
               </Card>
               <Btn onClick={analyzeCreative}>Analyze Creative Deal</Btn>
             </div>
@@ -530,7 +537,7 @@ export default function Home() {
                 <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:300, color:T.textFaint, fontSize:14 }}>Fill in the inputs and click Analyze</div>
               ) : (
                 <>
-                  <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:12, marginBottom:14 }}>
+                  <div style={{ display:'grid', gridTemplateColumns:mobile?'1fr':'repeat(3,1fr)', gap:12, marginBottom:14 }}>
                     {[
                       { label:'Monthly Spread', value:fmt(cResults.monthlySpread), color:cResults.monthlySpread>=0?'#22c55e':'#ef4444', sub:'buyer P&I - seller P&I' },
                       { label:'Upfront Profit', value:fmt(cResults.upfrontProfit), color:cResults.upfrontProfit>=0?'#22c55e':'#ef4444', sub:'down received - paid out' },
@@ -543,34 +550,9 @@ export default function Home() {
                       </div>
                     ))}
                   </div>
-                  <Card><Sec>Payment Details</Sec>
-                    <Row label="Seller's Monthly P&I (you pay)" value={fmt(cResults.sellerPI)} />
-                    <Row label="Wrap Loan" value={fmt(cResults.wrapLoan)} />
-                    <Row label="Buyer's Monthly P&I (you receive)" value={fmt(cResults.buyerPI)} />
-                    <Row label="Monthly Spread" value={fmt(cResults.monthlySpread)} green={cResults.monthlySpread>=0} red={cResults.monthlySpread<0} bold />
-                    <Row label="Annual Spread" value={fmt(cResults.annualSpread)} green={cResults.annualSpread>=0} />
-                    <Row label="Wrap Markup" value={fmt(cResults.wrapMarkup)} />
-                  </Card>
-                  <Card><Sec>Projected Profit by Year</Sec>
-                    <div style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:8 }}>
-                      {[1,2,3,5,10].map(yr=>{
-                        const val = cResults.upfrontProfit + cResults.monthlySpread*12*yr;
-                        return (
-                          <div key={yr} style={{ background:T.cardSub, borderRadius:8, padding:'10px 8px', textAlign:'center' }}>
-                            <div style={{ fontSize:11, color:T.textFaint, marginBottom:4 }}>Yr {yr}</div>
-                            <div style={{ fontSize:15, fontWeight:700, color:val>=0?'#22c55e':'#ef4444' }}>{fmt(val)}</div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </Card>
-                </>
-              )}
-            </div>
-          </div>
-        )}
-
-      </div>
-    </div>
-  );
-}
+                  <Card T={T}><Sec>Payment Details</Sec>
+                    <Row T={T} label="Seller's Monthly P&I (you pay)" value={fmt(cResults.sellerPI)} />
+                    <Row T={T} label="Wrap Loan" value={fmt(cResults.wrapLoan)} />
+                    <Row T={T} label="Buyer's Monthly P&I (you receive)" value={fmt(cResults.buyerPI)} />
+                    <Row T={T} label="Monthly Spread" value={fmt(cResults.monthlySpread)} green={cResults.monthlySpread>=0} red={cResults.monthlySpread<0} bold />
+                    <Row T={T} label="Annual Sp
