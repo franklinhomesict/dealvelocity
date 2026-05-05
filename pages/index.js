@@ -555,4 +555,29 @@ export default function Home() {
                     <Row T={T} label="Wrap Loan" value={fmt(cResults.wrapLoan)} />
                     <Row T={T} label="Buyer's Monthly P&I (you receive)" value={fmt(cResults.buyerPI)} />
                     <Row T={T} label="Monthly Spread" value={fmt(cResults.monthlySpread)} green={cResults.monthlySpread>=0} red={cResults.monthlySpread<0} bold />
-                    <Row T={T} label="Annual Sp
+                    <Row T={T} label="Annual Spread" value={fmt(cResults.annualSpread)} green={cResults.annualSpread>=0} />
+                    <Row T={T} label="Wrap Markup" value={fmt(cResults.wrapMarkup)} />
+                  </Card>
+                  <Card T={T}><Sec>Projected Profit by Year</Sec>
+                    <div style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:8 }}>
+                      {[1,2,3,5,10].map(yr=>{
+                        const val = cResults.upfrontProfit + cResults.monthlySpread*12*yr;
+                        return (
+                          <div key={yr} style={{ background:T.cardSub, borderRadius:8, padding:'10px 8px', textAlign:'center' }}>
+                            <div style={{ fontSize:11, color:T.textFaint, marginBottom:4 }}>Yr {yr}</div>
+                            <div style={{ fontSize:15, fontWeight:700, color:val>=0?'#22c55e':'#ef4444' }}>{fmt(val)}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </Card>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
+      </div>
+    </div>
+  );
+}
