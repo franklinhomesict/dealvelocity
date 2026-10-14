@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Property Portal Mockup</title>
+<style>
+:root{--bg:#f5f6f8;--card:#fff;--text:#1b2230;--muted:#667085;--line:#e3e6ec;--brand:#1f5eff;--ok:#12805c;--warn:#b54708;--bad:#c0262d}
+@media (prefers-color-scheme:dark){:root{--bg:#10131a;--card:#181c26;--text:#e8ebf2;--muted:#9aa3b5;--line:#2a3040;--brand:#6a95ff;--ok:#3ccf9b;--warn:#f2a65a;--bad:#ff7b80}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,sans-serif}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--card);border-bottom:1px solid var(--line)}
+.logo{font-weight:700}.logo small{font-weight:400;color:var(--muted);margin-left:6px}
+.roles button{margin-right:6px}
+button,select,input,textarea{font:inherit;color:inherit}
+button{padding:8px 14px;border-radius:8px;border:1px solid var(--line);background:var(--card);cursor:pointer}
+button.on,button.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+main{max-width:980px;margin:0 auto;padding:16px}
+nav.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px}
+h2{margin:0 0 10px;font-size:18px}h3{margin:0 0 6px;font-size:15px}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.stat b{display:block;font-size:26px}.muted{color:var(--muted);font-size:13px}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);font-size:14px;vertical-align:top}
+.tag{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12px;border:1px solid var(--line)}
+.ok{color:var(--ok)}.warn{color:var(--warn)}.bad{color:var(--bad)}
+label{display:block;margin:10px 0 4px;font-size:13px;color:var(--muted)}
+input,select,textarea{width:100%;padding:9px;border-radius:8px;border:1px solid var(--line);background:var(--bg)}
+.msg{padding:8px 12px;border-radius:10px;margin:6px 0;max-width:80%}.me{background:var(--brand);color:#fff;margin-left:auto}.them{background:var(--bg);border:1px solid var(--line)}
+.banner{padding:10px 14px;border-radius:10px;background:var(--bg);border:1px dashed var(--line);margin-bottom:14px;color:var(--muted);font-size:13px}
+.toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:10px;display:none}
+.scroll{overflow-x:auto}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">Property Portal<small>mockup · fake data · name TBD</small></div>
+  <div class="roles" id="roles"></div>
+</header>
+<main>
+  <div class="banner">Design preview only. Nothing here is real: no payments are taken, no messages are sent, no jobs are created.</div>
+  <nav class="tabs" id="tabs"></nav>
+  <div id="view"></div>
+</main>
+<div class="toast" id="toast"></div>
+<script>
+const $ = s => document.querySelector(s);
+const money = n => '$' + n.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+const toast = t => { const e=$('#toast'); e.textContent=t; e.style.display='block'; clearTimeout(toast.t); toast.t=setTimeout(()=>e.style.display='none',2600); };
+
+const state = {
+  role:'tenant', tab:'Home',
+  balance:1250, paid:false,
+  requests:[
+    {id:1042,unit:'118 Maple Ct',tenant:'Dana R.',issue:'Kitchen faucet dripping',urgency:'Normal',status:'New',sent:false},
+    {id:1041,unit:'22 Birch Ln #B',tenant:'Marcus T.',issue:'No heat in bedroom',urgency:'Urgent',status:'New',sent:false},
+    {id:1038,unit:'904 Oak St',tenant:'Priya S.',issue:'Garage door opener',urgency:'Normal',status:'With TenanTurn',sent:true}
+  ],
+  msgs:[{me:false,t:'Hi, the faucet in the kitchen has been dripping since Monday.'},{me:true,t:'Thanks Dana, I\'ll get someone out this week. Mornings or afternoons?'}]
+};
+const roles = {tenant:['Home','Pay rent','Maintenance','Messages'], manager:['Dashboard','Requests','Late rent','Messages'], owner:['Overview','Statements','Distributions']};
+const roleName = {tenant:'Tenant view',manager:'Manager view',owner:'Owner view'};
+
+function renderChrome(){
+  $('#roles').innerHTML = Object.keys(roles).map(r=>`<button class="${state.role===r?'on':''}" data-r="${r}">${roleName[r]}</button>`).join('');
+  $('#tabs').innerHTML = roles[state.role].map(t=>`<button class="${state.tab===t?'on':''}" data-t="${t}">${t}</button>`).join('');
+  $('#roles').onclick = e => { const r=e.target.dataset.r; if(r){state.role=r;state.tab=roles[r][0];render();} };
+  $('#tabs').onclick = e => { const t=e.target.dataset.t; if(t){state.tab=t;render();} };
+}
+
+const messagesCard = who => `<div class="card"><h2>Messages${who?' · '+who:''}</h2>
+  ${state.msgs.map(m=>`<div class="msg ${m.me===(state.role==='manager')?'me':'them'}">${m.t}</div>`).join('')}
+  <label>Reply</label><input id="msgIn" placeholder="Type a message (email + text copy)">
+  <p><button class="primary" id="send">Send</button></p></div>`;
+
+const views = {
+  tenant:{
+    'Home':()=>`<div class="grid"><div class="card stat"><span class="muted">Balance due Nov 1</span><b>${state.paid?money(0):money(state.balance)}</b><span class="muted">118 Maple Ct</span></div>
+      <div class="card stat"><span class="muted">Lease ends</span><b>Aug 31</b><span class="muted">Autopay: ${state.paid?'On':'Off'}</span></div>
+      <div class="card stat"><span class="muted">Open requests</span><b>1</b><span class="muted">Faucet · scheduled</span></div></div>
+      <div class="card"><h2>Recent activity</h2><table><tr><td>Oct 1</td><td>Rent payment (bank transfer)</td><td>${money(1250)}</td></tr><tr><td>Sep 1</td><td>Rent payment (bank transfer)</td><td>${money(1250)}</td></tr></table></div>`,
+    'Pay rent':()=>`<div class="card"><h2>Pay rent</h2><p>Amount due: <b>${state.paid?money(0):money(state.balance)}</b></p>
+      <label>Method</label><select id="method"><option value="ach">Bank transfer (ACH) · low fee</option><option value="card">Card · higher fee, instant</option></select>
+      <p class="muted" id="fee">Bank transfer: small fee, deposits in a few days.</p>
+      <label><input type="checkbox" style="width:auto"> Turn on autopay</label>
+      <p><button class="primary" id="pay" ${state.paid?'disabled':''}>${state.paid?'Paid ✓':'Pay '+money(state.balance)}</button></p></div>`,
+    'Maintenance':()=>`<div class="card"><h2>New maintenance request</h2>
+      <label>What's wrong?</label><textarea id="issue" rows="3" placeholder="Describe the problem"></textarea>
+      <label>Urgency</label><select><option>Normal</option><option>Urgent (no heat, leak, no power)</option></select>
+      <label>Photos</label><input type="file" multiple>
+      <label>OK to enter if I'm not home?</label><select><option>Yes</option><option>No, call me first</option></select>
+      <p><button class="primary" id="submitReq">Submit request</button></p></div>
+      <div class="card"><h2>My requests</h2><table><tr><td>Kitchen faucet dripping</td><td><span class="tag warn">Scheduled</span></td></tr></table></div>`,
+    'Messages':()=>messagesCard('Property manager')
+  },
+  manager:{
+    'Dashboard':()=>`<div class="grid"><div class="card stat"><span class="muted">Collected this month</span><b>${money(18450)}</b></div>
+      <div class="card stat"><span class="muted">Outstanding</span><b class="bad">${money(3100)}</b></div>
+      <div class="card stat"><span class="muted">Open requests</span><b>${state.requests.filter(r=>r.status==='New').length}</b></div></div>
+      <div class="card"><h2>Rent collected by owner entity</h2><table><tr><th>Entity</th><th>Units</th><th>Collected</th><th>Owed to owner</th></tr>
+      <tr><td>Home Buyers ICT</td><td>14</td><td>${money(11200)}</td><td>${money(11200)}</td></tr>
+      <tr><td>Smart Investment Management</td><td>3</td><td>${money(4250)}</td><td>${money(3612.5)}</td></tr>
+      <tr><td>Third LLC</td><td>2</td><td>${money(3000)}</td><td>${money(2550)}</td></tr></table>
+      <p class="muted">All payments land in one account (Home Buyers ICT). Every dollar is tagged to the owning entity so statements and distributions come straight from this table. Owed = collected minus management fee and expenses (sample).</p></div>`,
+    'Requests':()=>`<div class="card scroll"><h2>Maintenance inbox</h2><table><tr><th>#</th><th>Property</th><th>Issue</th><th>Urgency</th><th>Status</th><th></th></tr>
+      ${state.requests.map(r=>`<tr><td>${r.id}</td><td>${r.unit}<div class="muted">${r.tenant}</div></td><td>${r.issue}</td>
+      <td><span class="tag ${r.urgency==='Urgent'?'bad':''}">${r.urgency}</span></td><td>${r.status}</td>
+      <td>${r.sent?'<span class="ok">Sent ✓</span>':`<button class="primary" data-send="${r.id}">Send to TenanTurn</button>`}</td></tr>`).join('')}</table>
+      <p class="muted">"Send to TenanTurn" would create a job in TenanTurn with the address, photos and notes. Status changes there flow back to the tenant.</p></div>`,
+    'Late rent':()=>`<div class="card"><h2>Late rent (replaces the 5th-of-month check)</h2><table><tr><th>Tenant</th><th>Property</th><th>Owed</th><th>Days late</th><th></th></tr>
+      <tr><td>Marcus T.</td><td>22 Birch Ln #B</td><td>${money(1450)}</td><td>4</td><td><button data-remind="1">Send reminder</button></td></tr>
+      <tr><td>Chris L.</td><td>57 Elm Ave</td><td>${money(1650)}</td><td>4</td><td><button data-remind="1">Send reminder</button></td></tr></table></div>`,
+    'Messages':()=>messagesCard('Dana R. · 118 Maple Ct')
+  },
+  owner:{
+    'Overview':()=>`<div class="card"><h2>Smart Investment Management</h2><p class="muted">You only see the 3 properties this entity owns.</p>
+      <div class="grid"><div class="card stat"><span class="muted">Rent collected (Oct)</span><b>${money(4250)}</b></div>
+      <div class="card stat"><span class="muted">Expenses</span><b>${money(637.5)}</b></div>
+      <div class="card stat"><span class="muted">Net to distribute</span><b class="ok">${money(3612.5)}</b></div></div>
+      <table><tr><th>Property</th><th>Rent</th><th>Status</th></tr><tr><td>Sample Property A</td><td>${money(1500)}</td><td class="ok">Paid</td></tr><tr><td>Sample Property B</td><td>${money(1350)}</td><td class="ok">Paid</td></tr><tr><td>Sample Property C</td><td>${money(1400)}</td><td class="warn">Due</td></tr></table></div>`,
+    'Statements':()=>`<div class="card"><h2>Owner statements</h2><table><tr><td>October</td><td>Rent ${money(4250)} · Expenses ${money(637.5)} · Net ${money(3612.5)}</td><td><button>Download PDF</button></td></tr><tr><td>September</td><td>Net ${money(3580)}</td><td><button>Download PDF</button></td></tr></table></div>`,
+    'Distributions':()=>`<div class="card"><h2>Distributions</h2><table><tr><td>Oct 15</td><td>To Smart Investment Management</td><td>${money(3580)}</td><td class="ok">Paid</td></tr><tr><td>Nov 15</td><td>To Smart Investment Management</td><td>${money(3612.5)}</td><td class="warn">Scheduled</td></tr></table></div>`
+  }
+};
+
+function render(){
+  renderChrome();
+  $('#view').innerHTML = views[state.role][state.tab]();
+  const v = $('#view');
+  const m = $('#method'); if(m) m.onchange = () => $('#fee').textContent = m.value==='ach' ? 'Bank transfer: small fee, deposits in a few days.' : 'Card: higher fee, instant confirmation.';
+  const p = $('#pay'); if(p) p.onclick = () => { state.paid=true; toast('Payment recorded (mockup)'); render(); };
+  const s = $('#submitReq'); if(s) s.onclick = () => { toast('Request submitted. Manager notified (mockup)'); };
+  const snd = $('#send'); if(snd) snd.onclick = () => { const i=$('#msgIn'); if(i.value.trim()){state.msgs.push({me:state.role==='manager',t:i.value}); render();} };
+  v.querySelectorAll('[data-send]').forEach(b => b.onclick = () => { const r=state.requests.find(x=>x.id==b.dataset.send); r.sent=true; r.status='With TenanTurn'; toast('Job created in TenanTurn (mockup)'); render(); });
+  v.querySelectorAll('[data-remind]').forEach(b => b.onclick = () => toast('Reminder sent by email + text (mockup)'));
+}
+render();
+</script>
+</body>
+</html>
