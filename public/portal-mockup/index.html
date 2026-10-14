@@ -56,6 +56,9 @@ const state = {
     {id:1038,unit:'904 Oak St',tenant:'Priya S.',issue:'Garage door opener',urgency:'Normal',status:'With TenanTurn',sent:true}
   ],
   chat:[{ai:true,t:'Hi! Tell me what\'s going on and add a photo if you can. I\'ll try to help you fix it, and if I can\'t, I\'ll pass it to your property manager with all the details.'}],
+  preview:false, applied:false,
+  listings:[{unit:'22 Birch Ln #B (3bd/2ba)',rent:1395,live:true,leads:7},{unit:'57 Elm Ave (2bd/1ba)',rent:1150,live:false,leads:0}],
+  applicants:[{name:'Jordan M.',unit:'22 Birch Ln #B',ratio:3.4,credit:'Good (712)',flag:'',stage:'Screened'},{name:'Alex P.',unit:'22 Birch Ln #B',ratio:2.6,credit:'Fair (640)',flag:'Prior collections',stage:'Screened'},{name:'Sam W.',unit:'22 Birch Ln #B',ratio:3.8,credit:'Excellent (775)',flag:'',stage:'Approved'}],
   chatStage:'start', chatTopic:null, chatIssue:'',
   msgs:[{me:false,t:'Hi, the faucet in the kitchen has been dripping since Monday.'},{me:true,t:'Thanks Dana, I\'ll get someone out this week. Mornings or afternoons?'}]
 };
@@ -67,7 +70,7 @@ const AI_TOPICS = [
   {re:/power|outlet|breaker|light|electric/i, tried:'reset the GFCI outlet and checked the breaker panel', reply:'Let\'s check two things: 1) Press the RESET button on any outlet with test/reset buttons (often kitchens, baths, garages). 2) Check your breaker panel for a switch in the middle position, and flip it fully off and on. Did the power come back?'}
 ];
 const AI_DEFAULT = {tried:'basic checks suggested by the assistant', reply:'Thanks. Can you tell me where in the home this is happening and when it started? While you check, please make sure nobody is in danger, and take a clear photo if you haven\'t. If this is still a problem after that, tap "Still broken" and I\'ll send it to your manager.'};
-const roles = {tenant:['Home','Pay rent','Maintenance','Messages'], manager:['Dashboard','Requests','Late rent','Reports','Messages'], owner:['Overview','Statements','Distributions']};
+const roles = {tenant:['Home','Pay rent','Maintenance','Messages'], manager:['Dashboard','Requests','Late rent','Listings','Applicants','Reports','Messages'], owner:['Overview','Statements','Distributions']};
 const roleName = {tenant:'Tenant view',manager:'Manager view',owner:'Owner view'};
 
 function renderChrome(){
@@ -121,6 +124,22 @@ const views = {
     'Late rent':()=>`<div class="card"><h2>Late rent (replaces the 5th-of-month check)</h2><table><tr><th>Tenant</th><th>Property</th><th>Owed</th><th>Days late</th><th></th></tr>
       <tr><td>Marcus T.</td><td>22 Birch Ln #B</td><td>${money(1450)}</td><td>4</td><td><button data-remind="1">Send reminder</button></td></tr>
       <tr><td>Chris L.</td><td>57 Elm Ave</td><td>${money(1650)}</td><td>4</td><td><button data-remind="1">Send reminder</button></td></tr></table></div>`,
+    'Listings':()=>state.preview?`<div class="card"><button id="backList">← Back to listings</button>
+      <h2 style="margin-top:12px">Public listing page (what applicants see)</h2>
+      <div class="banner">Photo gallery goes here</div>
+      <h3>3 bed · 2 bath · 1,350 sq ft · Wichita, KS</h3><p><b>${money(1395)}/mo</b> · Deposit ${money(1395)} · Available Nov 15 · Pets: case by case</p>
+      <p>Sample description written by AI from your unit details and photos. You can edit before posting.</p>
+      <p class="muted">Screening criteria (same for every applicant): income at least 3x rent, no evictions in 7 years, credit and background review.</p>
+      <p><button class="primary" id="applyNow">Apply now</button></p>
+      ${state.applied?`<div class="card"><h3>Application submitted (mockup)</h3><p class="muted">Applicant pays the screening fee, authorizes credit and background checks, and e-signs. It then lands in your Applicants tab.</p></div>`:''}</div>`
+      :`<div class="card scroll"><h2>Listings</h2><table><tr><th>Unit</th><th>Rent</th><th>Status</th><th>Posted to</th><th>Leads</th><th></th></tr>
+      ${state.listings.map(l=>`<tr><td>${l.unit}</td><td>${money(l.rent)}</td><td><span class="tag ${l.live?'ok':'warn'}">${l.live?'Live':'Draft'}</span></td><td>${l.live?'Your site, Zillow, Apartments.com, Facebook':'Not posted'}</td><td>${l.leads}</td>
+      <td>${l.live?'':`<button class="primary" data-post="${l.unit}">Post listing</button> `}<button data-prev="1">Preview</button></td></tr>`).join('')}</table>
+      <p class="muted">Posting to outside sites would use a listings syndication service. Inquiries from every site arrive in one inbox and can get an automatic AI reply.</p></div>`,
+    'Applicants':()=>`<div class="card scroll"><h2>Applicants & screening</h2><table><tr><th>Applicant</th><th>Unit</th><th>Income / rent</th><th>Credit</th><th>Eviction / criminal</th><th>Stage</th><th></th></tr>
+      ${state.applicants.map(a=>`<tr><td>${a.name}</td><td>${a.unit}</td><td>${a.ratio}x</td><td>${a.credit}</td><td class="${a.flag?'warn':'ok'}">${a.flag||'Clear'}</td><td>${a.stage}</td>
+      <td>${a.stage==='Screened'?`<button class="primary" data-approve="${a.name}">Approve</button> <button data-deny="${a.name}">Deny</button>`:a.stage==='Approved'?`<button data-lease="${a.name}">Send lease</button>`:''}</td></tr>`).join('')}</table>
+      <p class="muted">Every applicant is scored against the same written criteria. A denial generates the required adverse action notice and keeps a record. Approval creates a lease draft for e-signature, and move-in charges and deposit go on the tenant's ledger.</p></div>`,
     'Reports':()=>`<div class="card"><h2>Reports</h2><p class="muted">Filter any report by owner entity, property and date range. Export to PDF or Excel.</p>
       <div class="grid">${['Rent roll','Income & expenses by owner','Delinquency / aged receivables','Vacancy & lease expirations','Maintenance cost by property','Owner statements','Security deposits held','1099 vendor totals'].map(r=>`<button data-report="${r}">${r}</button>`).join('')}</div></div>
       <div class="card scroll"><h2 id="repTitle">Income & expenses by owner · October (sample)</h2><table><tr><th>Entity</th><th>Rent</th><th>Maintenance</th><th>Mgmt fee</th><th>Net</th></tr>
@@ -174,6 +193,13 @@ function render(){
     state.chatStage='done'; toast('Request sent to manager (mockup)'); render(); };
   const snd = $('#send'); if(snd) snd.onclick = () => { const i=$('#msgIn'); if(i.value.trim()){state.msgs.push({me:state.role==='manager',t:i.value}); render();} };
   v.querySelectorAll('[data-send]').forEach(b => b.onclick = () => { const r=state.requests.find(x=>x.id==b.dataset.send); r.sent=true; r.status='With TenanTurn'; toast('Job created in TenanTurn (mockup)'); render(); });
+  v.querySelectorAll('[data-post]').forEach(b => b.onclick = () => { state.listings.find(l=>l.unit===b.dataset.post).live=true; toast('Listing posted (mockup)'); render(); });
+  v.querySelectorAll('[data-prev]').forEach(b => b.onclick = () => { state.preview=true; state.applied=false; render(); });
+  const bl = $('#backList'); if(bl) bl.onclick = () => { state.preview=false; render(); };
+  const ap = $('#applyNow'); if(ap) ap.onclick = () => { state.applied=true; toast('Application submitted (mockup)'); render(); };
+  v.querySelectorAll('[data-approve]').forEach(b => b.onclick = () => { state.applicants.find(a=>a.name===b.dataset.approve).stage='Approved'; toast('Approved. Lease draft created (mockup)'); render(); });
+  v.querySelectorAll('[data-deny]').forEach(b => b.onclick = () => { state.applicants.find(a=>a.name===b.dataset.deny).stage='Denied'; toast('Denied. Adverse action notice generated (mockup)'); render(); });
+  v.querySelectorAll('[data-lease]').forEach(b => b.onclick = () => { state.applicants.find(a=>a.name===b.dataset.lease).stage='Lease sent'; toast('Lease sent for e-signature (mockup)'); render(); });
   v.querySelectorAll('[data-report]').forEach(b => b.onclick = () => { $('#repTitle').textContent = b.dataset.report + ' (sample layout)'; toast('Report preview (mockup)'); });
   v.querySelectorAll('[data-remind]').forEach(b => b.onclick = () => toast('Reminder sent by email + text (mockup)'));
 }
