@@ -55,9 +55,19 @@ const state = {
     {id:1041,unit:'22 Birch Ln #B',tenant:'Marcus T.',issue:'No heat in bedroom',urgency:'Urgent',status:'New',sent:false},
     {id:1038,unit:'904 Oak St',tenant:'Priya S.',issue:'Garage door opener',urgency:'Normal',status:'With TenanTurn',sent:true}
   ],
+  chat:[{ai:true,t:'Hi! Tell me what\'s going on and add a photo if you can. I\'ll try to help you fix it, and if I can\'t, I\'ll pass it to your property manager with all the details.'}],
+  chatStage:'start', chatTopic:null, chatIssue:'',
   msgs:[{me:false,t:'Hi, the faucet in the kitchen has been dripping since Monday.'},{me:true,t:'Thanks Dana, I\'ll get someone out this week. Mornings or afternoons?'}]
 };
-const roles = {tenant:['Home','Pay rent','Maintenance','Messages'], manager:['Dashboard','Requests','Late rent','Messages'], owner:['Overview','Statements','Distributions']};
+const AI_TOPICS = [
+  {re:/gas|smoke|fire|flood|spark|burst|carbon monoxide/i, emergency:true, reply:'This sounds like an emergency, so I\'m skipping troubleshooting. If you smell gas or see fire, leave the home and call 911 now. For flooding, shut off the main water valve if it is safe. I have alerted your property manager as URGENT.'},
+  {re:/faucet|drip|sink|leak/i, tried:'closed the shut-off valve under the sink and checked where the drip comes from', reply:'Let\'s try this: 1) Look under the sink and turn the small shut-off valves clockwise to stop the water if it is leaking. 2) Check whether the water drips from the spout or from around the handle. 3) Wipe the area dry and see if it comes back in 10 minutes. Did that fix it?'},
+  {re:/heat|furnace|cold|thermostat|ac\b|air/i, tried:'checked thermostat mode and setting, replaced or checked the filter, checked the breaker', reply:'Let\'s check the basics: 1) Set the thermostat to Heat and 5 degrees above room temperature. 2) Check the air filter. A clogged one can shut a system down. 3) Check your breaker panel for a tripped switch. Wait 15 minutes. Did it come on?'},
+  {re:/toilet|clog|drain|backed/i, tried:'plunged the drain and closed the toilet shut-off valve', reply:'Try this: 1) Don\'t flush again. 2) Use a plunger with firm, steady pushes for 20 seconds. 3) If water is rising, turn the valve behind the toilet clockwise to shut it off. Did that clear it?'},
+  {re:/power|outlet|breaker|light|electric/i, tried:'reset the GFCI outlet and checked the breaker panel', reply:'Let\'s check two things: 1) Press the RESET button on any outlet with test/reset buttons (often kitchens, baths, garages). 2) Check your breaker panel for a switch in the middle position, and flip it fully off and on. Did the power come back?'}
+];
+const AI_DEFAULT = {tried:'basic checks suggested by the assistant', reply:'Thanks. Can you tell me where in the home this is happening and when it started? While you check, please make sure nobody is in danger, and take a clear photo if you haven\'t. If this is still a problem after that, tap "Still broken" and I\'ll send it to your manager.'};
+const roles = {tenant:['Home','Pay rent','Maintenance','Messages'], manager:['Dashboard','Requests','Late rent','Reports','Messages'], owner:['Overview','Statements','Distributions']};
 const roleName = {tenant:'Tenant view',manager:'Manager view',owner:'Owner view'};
 
 function renderChrome(){
@@ -83,12 +93,14 @@ const views = {
       <p class="muted" id="fee">Bank transfer: small fee, deposits in a few days.</p>
       <label><input type="checkbox" style="width:auto"> Turn on autopay</label>
       <p><button class="primary" id="pay" ${state.paid?'disabled':''}>${state.paid?'Paid ✓':'Pay '+money(state.balance)}</button></p></div>`,
-    'Maintenance':()=>`<div class="card"><h2>New maintenance request</h2>
-      <label>What's wrong?</label><textarea id="issue" rows="3" placeholder="Describe the problem"></textarea>
-      <label>Urgency</label><select><option>Normal</option><option>Urgent (no heat, leak, no power)</option></select>
-      <label>Photos</label><input type="file" multiple>
-      <label>OK to enter if I'm not home?</label><select><option>Yes</option><option>No, call me first</option></select>
-      <p><button class="primary" id="submitReq">Submit request</button></p></div>
+    'Maintenance':()=>`<div class="card"><h2>Maintenance help</h2>
+      <p class="muted">Describe the problem and add a photo. The AI assistant tries to help you fix it first. If it can't, it sends a ready-made request to your property manager.</p>
+      ${state.chat.map(m=>`<div class="msg ${m.ai?'them':'me'}">${m.ai?'<b>AI assistant</b><br>':''}${m.t}</div>`).join('')}
+      ${state.chatStage==='steps'?`<p><button class="primary" id="fixed">That fixed it</button> <button id="stillBroken">Still broken, send to my manager</button></p>`:''}
+      ${state.chatStage==='done'?'':`<label>${state.chatStage==='start'?'What\'s wrong?':'Reply'}</label><textarea id="issue" rows="2" placeholder="e.g. my kitchen faucet keeps dripping"></textarea>
+      ${state.chatStage==='start'?'<label>Photo (optional)</label><input type="file" id="photo" accept="image/*">':''}
+      <p><button class="primary" id="aiSend">Send</button></p>`}
+      <p class="muted">Emergencies (gas smell, fire, flooding, sparks) skip the chat and alert your manager immediately.</p></div>
       <div class="card"><h2>My requests</h2><table><tr><td>Kitchen faucet dripping</td><td><span class="tag warn">Scheduled</span></td></tr></table></div>`,
     'Messages':()=>messagesCard('Property manager')
   },
@@ -102,13 +114,19 @@ const views = {
       <tr><td>Third LLC</td><td>2</td><td>${money(3000)}</td><td>${money(2550)}</td></tr></table>
       <p class="muted">All payments land in one account (Home Buyers ICT). Every dollar is tagged to the owning entity so statements and distributions come straight from this table. Owed = collected minus management fee and expenses (sample).</p></div>`,
     'Requests':()=>`<div class="card scroll"><h2>Maintenance inbox</h2><table><tr><th>#</th><th>Property</th><th>Issue</th><th>Urgency</th><th>Status</th><th></th></tr>
-      ${state.requests.map(r=>`<tr><td>${r.id}</td><td>${r.unit}<div class="muted">${r.tenant}</div></td><td>${r.issue}</td>
+      ${state.requests.map(r=>`<tr><td>${r.id}</td><td>${r.unit}<div class="muted">${r.tenant}</div></td><td>${r.issue}${r.ai?`<div class="muted">AI summary: ${r.ai}</div>`:''}</td>
       <td><span class="tag ${r.urgency==='Urgent'?'bad':''}">${r.urgency}</span></td><td>${r.status}</td>
       <td>${r.sent?'<span class="ok">Sent ✓</span>':`<button class="primary" data-send="${r.id}">Send to TenanTurn</button>`}</td></tr>`).join('')}</table>
       <p class="muted">"Send to TenanTurn" would create a job in TenanTurn with the address, photos and notes. Status changes there flow back to the tenant.</p></div>`,
     'Late rent':()=>`<div class="card"><h2>Late rent (replaces the 5th-of-month check)</h2><table><tr><th>Tenant</th><th>Property</th><th>Owed</th><th>Days late</th><th></th></tr>
       <tr><td>Marcus T.</td><td>22 Birch Ln #B</td><td>${money(1450)}</td><td>4</td><td><button data-remind="1">Send reminder</button></td></tr>
       <tr><td>Chris L.</td><td>57 Elm Ave</td><td>${money(1650)}</td><td>4</td><td><button data-remind="1">Send reminder</button></td></tr></table></div>`,
+    'Reports':()=>`<div class="card"><h2>Reports</h2><p class="muted">Filter any report by owner entity, property and date range. Export to PDF or Excel.</p>
+      <div class="grid">${['Rent roll','Income & expenses by owner','Delinquency / aged receivables','Vacancy & lease expirations','Maintenance cost by property','Owner statements','Security deposits held','1099 vendor totals'].map(r=>`<button data-report="${r}">${r}</button>`).join('')}</div></div>
+      <div class="card scroll"><h2 id="repTitle">Income & expenses by owner · October (sample)</h2><table><tr><th>Entity</th><th>Rent</th><th>Maintenance</th><th>Mgmt fee</th><th>Net</th></tr>
+      <tr><td>Home Buyers ICT</td><td>${money(11200)}</td><td>${money(900)}</td><td>${money(0)}</td><td>${money(10300)}</td></tr>
+      <tr><td>Smart Investment Management</td><td>${money(4250)}</td><td>${money(425)}</td><td>${money(212.5)}</td><td>${money(3612.5)}</td></tr>
+      <tr><td>Third LLC</td><td>${money(3000)}</td><td>${money(300)}</td><td>${money(150)}</td><td>${money(2550)}</td></tr></table></div>`,
     'Messages':()=>messagesCard('Dana R. · 118 Maple Ct')
   },
   owner:{
@@ -128,9 +146,35 @@ function render(){
   const v = $('#view');
   const m = $('#method'); if(m) m.onchange = () => $('#fee').textContent = m.value==='ach' ? 'Bank transfer: small fee, deposits in a few days.' : 'Card: higher fee, instant confirmation.';
   const p = $('#pay'); if(p) p.onclick = () => { state.paid=true; toast('Payment recorded (mockup)'); render(); };
-  const s = $('#submitReq'); if(s) s.onclick = () => { toast('Request submitted. Manager notified (mockup)'); };
+  const aiSend = $('#aiSend'); if(aiSend) aiSend.onclick = () => {
+    const txt = $('#issue').value.trim(); if(!txt){toast('Type a message first');return;}
+    const hasPhoto = $('#photo') && $('#photo').files.length > 0;
+    state.chat.push({ai:false,t:txt+(hasPhoto?' 📷 (photo attached)':'')});
+    if(state.chatStage==='start'){
+      state.chatIssue = txt;
+      const topic = AI_TOPICS.find(x=>x.re.test(txt));
+      if(topic && topic.emergency){
+        state.chat.push({ai:true,t:topic.reply});
+        state.requests.unshift({id:1043,unit:'118 Maple Ct',tenant:'Dana R.',issue:txt,urgency:'Urgent',status:'New',sent:false,ai:'EMERGENCY keywords detected. Troubleshooting skipped, tenant told to call 911 / utility.'});
+        state.chatStage='done'; toast('Emergency flagged to your manager (mockup)');
+      } else {
+        state.chatTopic = topic || AI_DEFAULT;
+        state.chat.push({ai:true,t:(hasPhoto?'Thanks for the photo (in the real version I would look at it here). ':'')+state.chatTopic.reply});
+        state.chatStage='steps';
+      }
+    } else {
+      state.chat.push({ai:true,t:'Good question. In the real version, Claude would answer using your property info and repair guides. If you\'re still stuck, tap "Still broken" and your manager will take it from here.'});
+    }
+    render();
+  };
+  const fx = $('#fixed'); if(fx) fx.onclick = () => { state.chat.push({ai:true,t:'Great! Glad that worked. No request was sent. Message me anytime.'}); state.chatStage='done'; toast('Resolved without a work order (mockup)'); render(); };
+  const sb = $('#stillBroken'); if(sb) sb.onclick = () => {
+    state.requests.unshift({id:1043,unit:'118 Maple Ct',tenant:'Dana R.',issue:state.chatIssue,urgency:'Normal',status:'New',sent:false,ai:'Tenant tried: '+state.chatTopic.tried+'. Still not fixed. Photo attached.'});
+    state.chat.push({ai:true,t:'Sorry that didn\'t work. I sent your request to your property manager with what we already tried, so you won\'t need to repeat it.'});
+    state.chatStage='done'; toast('Request sent to manager (mockup)'); render(); };
   const snd = $('#send'); if(snd) snd.onclick = () => { const i=$('#msgIn'); if(i.value.trim()){state.msgs.push({me:state.role==='manager',t:i.value}); render();} };
   v.querySelectorAll('[data-send]').forEach(b => b.onclick = () => { const r=state.requests.find(x=>x.id==b.dataset.send); r.sent=true; r.status='With TenanTurn'; toast('Job created in TenanTurn (mockup)'); render(); });
+  v.querySelectorAll('[data-report]').forEach(b => b.onclick = () => { $('#repTitle').textContent = b.dataset.report + ' (sample layout)'; toast('Report preview (mockup)'); });
   v.querySelectorAll('[data-remind]').forEach(b => b.onclick = () => toast('Reminder sent by email + text (mockup)'));
 }
 render();
