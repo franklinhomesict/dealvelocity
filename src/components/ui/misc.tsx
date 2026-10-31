@@ -22,7 +22,7 @@ export function PanelHeader({ title, meta, actions, className }: { title: ReactN
     <header className={cn("flex min-h-[40px] items-center justify-between gap-3 border-b border-line px-3.5", className)}>
       <div className="flex min-w-0 items-baseline gap-2">
         <h2 className="truncate text-sm font-semibold text-fg">{title}</h2>
-        {meta && <span className="truncate text-xs text-fg-3">{meta}</span>}
+        {meta && <span className="hidden truncate text-xs text-fg-3 sm:inline">{meta}</span>}
       </div>
       {actions && <div className="flex shrink-0 items-center gap-1">{actions}</div>}
     </header>

@@ -101,7 +101,7 @@ export function InlineEdit({
       )}
     >
       <span className={cn("min-w-0", kind === "textarea" ? "whitespace-pre-wrap" : "block max-w-[200px] truncate", (kind === "money" || kind === "number") && "num")}>{empty ? placeholder : display ?? String(value)}</span>
-      <Pencil className="h-3 w-3 shrink-0 text-fg-3 opacity-0 transition-opacity group-hover:opacity-100" />
+      <Pencil className={cn("h-3 w-3 shrink-0 text-fg-3 opacity-0 transition-opacity group-hover:opacity-100", align === "right" && "order-first")} />
     </button>
   );
 }

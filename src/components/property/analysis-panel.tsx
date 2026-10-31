@@ -31,7 +31,7 @@ const toNum = (s: string) => {
 };
 const fmtIn = (n: number | null) => (n == null ? "" : n.toLocaleString("en-US"));
 
-export function AnalysisPanel({ seed, assumptions, askingPrice, propertyId, readOnly }: { seed: AnalysisSeed; assumptions: Assumptions; askingPrice: number | null; propertyId: string; readOnly: boolean }) {
+export function AnalysisPanel({ seed, assumptions, askingPrice, propertyId, readOnly }: { seed: AnalysisSeed; assumptions: Assumptions; askingPrice: number | null; propertyId: string | null; readOnly: boolean }) {
   const initial = {
     purchasePrice: fmtIn(seed.purchasePrice ?? askingPrice),
     arv: fmtIn(seed.arv),
@@ -75,6 +75,7 @@ export function AnalysisPanel({ seed, assumptions, askingPrice, propertyId, read
 
   const save = () =>
     start(async () => {
+      if (!propertyId) return;
       const res = await saveAnalysisAction(propertyId, { ...inputs, arvSource: v.arvSource });
       notify(res);
       if (res.ok) router.refresh();
@@ -84,7 +85,7 @@ export function AnalysisPanel({ seed, assumptions, askingPrice, propertyId, read
     <Panel id="analysis">
       <PanelHeader
         title="Investment analysis"
-        meta={seed.savedAt ? `Saved ${relTime(seed.savedAt)} · engine ${seed.engineVersion}` : "Not yet saved"}
+        meta={!propertyId ? "Scratch calculator · not linked to a property" : seed.savedAt ? `Saved ${relTime(seed.savedAt)} · engine ${seed.engineVersion}` : "Not yet saved"}
         actions={
           <div className="flex h-7 items-center rounded border border-line bg-surface-2 p-0.5" role="tablist" aria-label="Strategy">
             {(["brrrr", "flip"] as const).map((k) => (
@@ -117,7 +118,7 @@ export function AnalysisPanel({ seed, assumptions, askingPrice, propertyId, read
           {dirty ? <Badge tone="warning" dot>Unsaved scenario</Badge> : <span>Edit any input to model a scenario. Results update instantly.</span>}
           {v.arvSource === "estimate" && toNum(v.arv) && <span className="hidden sm:inline">· ARV is an estimate, not verified comps</span>}
         </div>
-        {!readOnly && (
+        {!readOnly && propertyId && (
           <div className="flex items-center gap-1.5">
             {dirty && (
               <Button size="xs" variant="ghost" onClick={() => setV(initial)}>

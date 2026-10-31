@@ -139,13 +139,8 @@ export async function moveLeadStageAction(leadId: string, stage: string): Promis
     if (lead.stage === s) return { ok: true };
     // Contract stage requires an approved/accepted offer — no shortcuts around approval.
     if (s === "under_contract" || s === "closed") {
-      const ok = await db
-        .select({ id: offers.id })
-        .from(offers)
-        .where(and(eq(offers.leadId, leadId)))
-        .then((r) => r.length);
-      const approved = await db.select({ status: offers.status }).from(offers).where(eq(offers.leadId, leadId));
-      if (!ok || !approved.some((o) => o.status === "accepted" || o.status === "approved")) {
+      const statuses = await db.select({ status: offers.status }).from(offers).where(eq(offers.leadId, leadId));
+      if (!statuses.some((o) => o.status === "accepted" || o.status === "approved" || o.status === "countered")) {
         return { ok: false, error: "Moving to contract requires an owner-approved offer" };
       }
     }

@@ -57,7 +57,7 @@ export default async function OverviewPage() {
         </Panel>
 
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_400px]">
-          <Panel className="min-w-0">
+          <Panel className="min-w-0 self-start">
             <PanelHeader
               title="Needs your attention"
               meta={d.attention.length ? `${d.attention.length} open` : undefined}

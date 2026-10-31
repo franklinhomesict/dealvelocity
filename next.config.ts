@@ -11,7 +11,6 @@ const config: NextConfig = {
   reactStrictMode: true,
   devIndicators: false,
   poweredByHeader: false,
-  output: "standalone",
   serverExternalPackages: ["postgres", "bcryptjs"],
   async headers() {
     return [{ source: "/(.*)", headers: securityHeaders }];

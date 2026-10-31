@@ -36,12 +36,12 @@ export function PropertyHeader({
             {meta}
           </div>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
           {leadId && stage && <StageMenu leadId={leadId} stage={stage} disabled={readOnly} />}
           {phone && (
             canCall ? (
-              <a href={`tel:${phone}`} className="inline-flex h-7 items-center gap-1.5 rounded border border-line bg-surface-2 px-2.5 text-sm font-medium hover:bg-surface-3" title="Dials from your device. In-app calling and recording arrive in Phase 4.">
-                <Phone className="h-3.5 w-3.5" /> Call seller
+              <a href={`tel:${phone}`} className="inline-flex h-7 items-center gap-1.5 whitespace-nowrap rounded border border-line bg-surface-2 px-2.5 text-sm font-medium hover:bg-surface-3" title="Dials from your device. In-app calling and recording arrive in Phase 4.">
+                <Phone className="h-3.5 w-3.5" /> Call<span className="hidden sm:inline"> seller</span>
               </a>
             ) : (
               <Button size="sm" disabled title="Seller is marked Do Not Contact"><Phone className="h-3.5 w-3.5" /> Do not contact</Button>
