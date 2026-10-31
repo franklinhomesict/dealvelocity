@@ -22,6 +22,7 @@ test("capture review screenshots", async ({ page }) => {
   await page.screenshot({ path: `${OUT}/04-lead-drawer.png` });
   await snap(page, "/pipeline", "05-pipeline");
   await snap(page, "/underwriting", "06-underwriting");
+  await snap(page, "/prospecting", "15-prospecting", 1300);
   await snap(page, "/conversations", "07-conversations-planned");
   await snap(page, "/contracts", "08-contracts-planned");
   await snap(page, "/transactions", "09-transactions");

@@ -7,6 +7,8 @@ import { Timeline } from "@/components/property/timeline";
 import { PropertyOverview, SellerIntel, TasksPanel, OffersPanel, TransactionPanel } from "@/components/property/side-panels";
 import { Panel, PanelHeader } from "@/components/ui/misc";
 import { VerdictBadge } from "@/components/status";
+import { DealMachinePanel } from "@/components/property/dealmachine-panel";
+import { getComps, getCreditSettings, isConfigured } from "@/lib/dealmachine/service";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +19,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 export default async function PropertyPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [user, d, { values: assumptions }] = await Promise.all([requireUser(), getPropertyDetail(id), getAssumptions()]);
+  const [user, d, { values: assumptions }, comps, dmSettings] = await Promise.all([requireUser(), getPropertyDetail(id), getAssumptions(), getComps(id).catch(() => []), getCreditSettings()]);
   if (!d) notFound();
   const { property: p, lead, contact, analysis, analysisResult } = d;
   const readOnly = user.role === "viewer";
@@ -79,6 +81,23 @@ export default async function PropertyPage({ params }: { params: Promise<{ id: s
           )}
           {lead && <TasksPanel leadId={lead.id} tasks={d.openTasks} readOnly={readOnly} />}
           {lead && <SellerIntel lead={lead} contact={contact} readOnly={readOnly} />}
+          <DealMachinePanel
+            propertyId={p.id}
+            connected={isConfigured()}
+            paidEnabled={dmSettings.paidEnabled}
+            canWrite={!readOnly}
+            sourceRef={p.sourceRef ?? ((p.sourcePayload as { dm_property_id?: string } | null)?.dm_property_id ?? null)}
+            isDealMachine={p.dataSource === "dealmachine"}
+            syncedAt={p.sourceSyncedAt?.toISOString() ?? null}
+            enrichedAt={p.sourceEnrichedAt?.toISOString() ?? null}
+            flags={p.distressFlags}
+            estimatedValue={p.estimatedValue}
+            estimatedRepairCost={p.estimatedRepairCost}
+            equityPercent={p.estimatedEquityPercent != null ? Number(p.estimatedEquityPercent) : null}
+            equityAmount={p.estimatedEquityAmount}
+            subjectSqft={p.sqft}
+            comps={comps}
+          />
           <PropertyOverview p={p} readOnly={readOnly} />
         </div>
       </div>

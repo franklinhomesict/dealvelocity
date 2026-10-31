@@ -12,11 +12,17 @@ export default defineConfig({
   globalSetup: "./e2e/global-setup.ts",
   use: { baseURL: `http://localhost:${PORT}`, trace: "retain-on-failure" },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"], launchOptions: { executablePath: process.env.PW_CHROMIUM ?? undefined } } }],
-  webServer: {
-    command: `npx next start -p ${PORT}`,
-    port: PORT,
-    reuseExistingServer: false,
-    timeout: 60_000,
-    env: { DATABASE_URL, ALLOW_SAMPLE_DATA: "true", SESSION_SECRET: "test" },
-  },
+  webServer: [
+    { command: "node e2e/mock-dealmachine.mjs", port: 4010, reuseExistingServer: false },
+    {
+      command: `npx next start -p ${PORT}`,
+      port: PORT,
+      reuseExistingServer: false,
+      timeout: 60_000,
+      env: {
+        DATABASE_URL, ALLOW_SAMPLE_DATA: "true", SESSION_SECRET: "test",
+        DEALMACHINE_API_KEY: "dm_sk_live_test", DEALMACHINE_API_URL: "http://localhost:4010/v1", DEALMACHINE_WEBHOOK_SECRET: "whsec_test",
+      },
+    },
+  ],
 });

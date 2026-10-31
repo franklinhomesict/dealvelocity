@@ -172,6 +172,13 @@ export const properties = pgTable(
     dataSource: dataSource("data_source").notNull().default("manual"),
     sourceRef: text("source_ref"),
     sourceSyncedAt: timestamp("source_synced_at", { withTimezone: true }),
+    // DealMachine estimates (never treated as verified) and distress signals
+    estimatedRepairCost: integer("estimated_repair_cost"),
+    estimatedEquityPercent: numeric("estimated_equity_percent", { precision: 6, scale: 2 }),
+    estimatedEquityAmount: integer("estimated_equity_amount"),
+    distressFlags: text("distress_flags").array().notNull().default(sql`'{}'::text[]`),
+    sourceEnrichedAt: timestamp("source_enriched_at", { withTimezone: true }),
+    sourcePayload: jsonb("source_payload"),
     isSample: boolean("is_sample").notNull().default(false),
     normalizedAddress: text("normalized_address").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -418,6 +425,134 @@ export const auditLog = pgTable(
   (t) => [index("audit_entity_idx").on(t.entity, t.entityId), index("audit_at_idx").on(t.at)],
 );
 
+/* ─────────────────────────── Integrations ─────────────────────────── */
+
+export const importJobStatus = pgEnum("import_job_status", [
+  "draft",
+  "estimated",
+  "approved",
+  "running",
+  "paused",
+  "completed",
+  "failed",
+  "cancelled",
+]);
+
+/**
+ * A DealMachine import. Paid searches must be estimated (free count) and
+ * approved by the owner before any credit-consuming request is made.
+ * `cursor` makes runs resumable; property upserts make retries idempotent.
+ */
+export const importJobs = pgTable(
+  "import_jobs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    provider: text("provider").notNull().default("dealmachine"),
+    kind: text("kind").notNull(), // "search" (paid) | "list" (free base data)
+    name: text("name").notNull(),
+    status: importJobStatus("status").notNull().default("draft"),
+    query: jsonb("query").notNull(),
+    maxRecords: integer("max_records").notNull(),
+    matchingCount: integer("matching_count"),
+    estimatedCredits: integer("estimated_credits"),
+    approvedCredits: integer("approved_credits"),
+    creditsUsed: integer("credits_used").notNull().default(0),
+    processed: integer("processed").notNull().default(0),
+    created: integer("created").notNull().default(0),
+    updated: integer("updated").notNull().default(0),
+    duplicates: integer("duplicates").notNull().default(0),
+    failedRecords: integer("failed_records").notNull().default(0),
+    cursor: jsonb("cursor"),
+    lastError: text("last_error"),
+    lockedUntil: timestamp("locked_until", { withTimezone: true }),
+    createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+    approvedBy: uuid("approved_by").references(() => users.id, { onDelete: "set null" }),
+    approvedAt: timestamp("approved_at", { withTimezone: true }),
+    startedAt: timestamp("started_at", { withTimezone: true }),
+    finishedAt: timestamp("finished_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("import_jobs_status_idx").on(t.status),
+    check("import_jobs_max_positive", sql`${t.maxRecords} > 0`),
+    check("import_jobs_credit_cap", sql`${t.approvedCredits} is null or ${t.creditsUsed} <= ${t.approvedCredits}`),
+  ],
+);
+
+/** Every outbound provider request, for credit tracking and debugging. Never stores secrets. */
+export const apiCalls = pgTable(
+  "api_calls",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    provider: text("provider").notNull(),
+    operation: text("operation").notNull(),
+    method: text("method").notNull(),
+    path: text("path").notNull(),
+    status: integer("status"),
+    durationMs: integer("duration_ms"),
+    creditsUsed: integer("credits_used").notNull().default(0),
+    creditsDeduplicated: integer("credits_deduplicated").notNull().default(0),
+    jobId: uuid("job_id").references(() => importJobs.id, { onDelete: "set null" }),
+    propertyId: uuid("property_id").references(() => properties.id, { onDelete: "set null" }),
+    error: text("error"),
+    at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("api_calls_provider_at_idx").on(t.provider, t.at)],
+);
+
+export const comparables = pgTable(
+  "comparables",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    propertyId: uuid("property_id")
+      .notNull()
+      .references(() => properties.id, { onDelete: "cascade" }),
+    source: text("source").notNull().default("dealmachine"),
+    sourceRef: text("source_ref"),
+    address: text("address").notNull(),
+    status: text("status").notNull(), // sold | active | pending
+    price: integer("price"),
+    date: date("date"),
+    beds: integer("beds"),
+    baths: numeric("baths", { precision: 3, scale: 1 }),
+    sqft: integer("sqft"),
+    yearBuilt: integer("year_built"),
+    distanceMiles: numeric("distance_miles", { precision: 6, scale: 2 }),
+    excluded: boolean("excluded").notNull().default(false),
+    raw: jsonb("raw"),
+    fetchedAt: timestamp("fetched_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("comparables_property_idx").on(t.propertyId)],
+);
+
+/** Inbound webhook deliveries, stored before processing; event id makes processing idempotent. */
+export const webhookEvents = pgTable(
+  "webhook_events",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    provider: text("provider").notNull(),
+    eventId: text("event_id").notNull(),
+    type: text("type").notNull(),
+    payload: jsonb("payload").notNull(),
+    status: text("status").notNull().default("received"), // received | processed | ignored | failed
+    error: text("error"),
+    receivedAt: timestamp("received_at", { withTimezone: true }).notNull().defaultNow(),
+    processedAt: timestamp("processed_at", { withTimezone: true }),
+  },
+  (t) => [uniqueIndex("webhook_events_provider_event_idx").on(t.provider, t.eventId)],
+);
+
+/** Owner-controlled runtime settings (credit budgets, paid-request switch). */
+export const appSettings = pgTable("app_settings", {
+  key: text("key").primaryKey(),
+  value: jsonb("value").notNull(),
+  updatedBy: uuid("updated_by").references(() => users.id, { onDelete: "set null" }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type ImportJob = typeof importJobs.$inferSelect;
+export type Comparable = typeof comparables.$inferSelect;
 export type User = typeof users.$inferSelect;
 export type Property = typeof properties.$inferSelect;
 export type Contact = typeof contacts.$inferSelect;

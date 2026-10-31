@@ -2,7 +2,7 @@
 
 Acquisition CRM + underwriting platform for Home Buyers ICT (Wichita, KS). BRRRR-first, owner-approved offers, PostgreSQL-backed, no GoHighLevel / Supabase / n8n.
 
-**Status: Phase 1 (CRM foundation).** Not production-ready — see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#production-readiness).
+**Status: Phase 2 (DealMachine integration) on top of the Phase 1 CRM foundation.** See [docs/DEALMACHINE.md](docs/DEALMACHINE.md). Not production-ready — see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#production-readiness).
 
 ![Dashboard](docs/screenshots/01-dashboard.png)
 
@@ -28,7 +28,7 @@ npm run build && npm run test:e2e   # Playwright against a fresh acq_os_test dat
 ```
 
 ## Keyboard
-`⌘K` search · `C` add property · `G` then `O/L/R/P/U/F/S` navigate · `J/K` + `↵` in tables · `[` sidebar · `?` all shortcuts
+`⌘K` search · `C` add property · `G` then `O/L/R/D/P/U/F/S` navigate · `J/K` + `↵` in tables · `[` sidebar · `?` all shortcuts
 
 ## Repo layout
 ```
@@ -36,7 +36,8 @@ src/app/(app)/        authenticated screens (dashboard, leads, properties, pipel
 src/app/actions.ts    all mutations (zod-validated, role-checked, audited)
 src/db/schema.ts      PostgreSQL schema; migrations in drizzle/
 src/lib/underwriting/ deterministic BRRRR + flip engine and assumptions
+src/lib/dealmachine/  API client, mapper, comps/ARV, webhook verification, credit guard, import service
 src/components/       design-system primitives (ui/) and feature components
-e2e/                  Playwright functional + screenshot suites
+e2e/                  Playwright functional + screenshot suites, mock DealMachine server
 legacy/               original single-file DealVelocity analyzer (reference only)
 ```

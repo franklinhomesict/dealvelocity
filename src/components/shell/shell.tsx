@@ -75,7 +75,7 @@ export function Shell({ user, counts, attention, initialCollapsed, initialTheme,
       const k = e.key.toLowerCase();
       if (pending.current === "g") {
         pending.current = null;
-        const map: Record<string, string> = { o: "/", l: "/leads", r: "/properties", p: "/pipeline", u: "/underwriting", s: "/settings", t: "/transactions", f: "/offers" };
+        const map: Record<string, string> = { o: "/", l: "/leads", r: "/properties", p: "/pipeline", u: "/underwriting", s: "/settings", t: "/transactions", f: "/offers", d: "/prospecting" };
         if (map[k]) {
           e.preventDefault();
           router.push(map[k]);
@@ -291,6 +291,7 @@ export function Shell({ user, counts, attention, initialCollapsed, initialTheme,
             ["Go to Leads", ["G", "L"]],
             ["Go to Properties", ["G", "R"]],
             ["Go to Pipeline", ["G", "P"]],
+            ["Go to Prospecting", ["G", "D"]],
             ["Go to Underwriting", ["G", "U"]],
             ["Go to Offers", ["G", "F"]],
             ["Go to Settings", ["G", "S"]],

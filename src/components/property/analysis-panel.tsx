@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, Info, RotateCcw, CircleSlash } from "lucide-react";
 import { analyzeBrrrr, analyzeFlip, type BrrrrResult, type RefiScenario } from "@/lib/underwriting/engine";
@@ -40,6 +40,16 @@ export function AnalysisPanel({ seed, assumptions, askingPrice, propertyId, read
     monthlyRent: fmtIn(seed.monthlyRent),
   };
   const [v, setV] = useState(initial);
+  // Comps panel can push a comps-based ARV into the scenario ("Use as ARV").
+  useEffect(() => {
+    const h = (e: Event) => {
+      const arv = (e as CustomEvent<number>).detail;
+      setV((x) => ({ ...x, arv: fmtIn(arv), arvSource: "comps" }));
+      document.getElementById("analysis")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+    window.addEventListener("aos:set-arv", h);
+    return () => window.removeEventListener("aos:set-arv", h);
+  }, []);
   const [strategy, setStrategy] = useState<"brrrr" | "flip">("brrrr");
   const [refi, setRefi] = useState<"cash_out" | "rate_term">("cash_out");
   const [pending, start] = useTransition();

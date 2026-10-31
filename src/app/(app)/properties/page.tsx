@@ -9,6 +9,7 @@ import { SampleTag } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/misc";
 import { cn } from "@/components/ui/cn";
 import { SearchBox } from "@/components/search-box";
+import { DISTRESS_LABELS } from "@/lib/dealmachine/mapper";
 
 export const metadata = { title: "Properties" };
 export const dynamic = "force-dynamic";
@@ -37,7 +38,11 @@ export default async function PropertiesPage({ searchParams }: { searchParams: P
                     <Link href={`/properties/${r.id}`} className="flex items-center gap-2 font-medium hover:underline">
                       <span className="max-w-[220px] truncate">{r.street}</span>{r.isSample && <SampleTag />}
                     </Link>
-                    <div className="text-xs text-fg-3">{r.city} {r.zip}</div>
+                    <div className="flex items-center gap-1.5 text-xs text-fg-3">
+                      <span>{r.city} {r.zip}</span>
+                      {r.flags?.slice(0, 3).map((f) => <span key={f} className="rounded-sm border border-line px-1 text-2xs text-fg-2">{DISTRESS_LABELS[f] ?? f}</span>)}
+                      {r.flags?.length > 3 && <span className="text-2xs">+{r.flags.length - 3}</span>}
+                    </div>
                   </td>
                   <td className={cn(td, "text-fg-2")}>{PROPERTY_TYPES[r.propertyType as keyof typeof PROPERTY_TYPES]}</td>
                   <td className={cn(td, "num text-fg-2")}>{r.beds ?? "—"} / {r.baths ? Number(r.baths) : "—"}</td>

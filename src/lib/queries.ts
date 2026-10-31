@@ -402,7 +402,7 @@ export async function listProperties(q?: string) {
   return (await db.execute(sql`
     select p.id, p.street, p.city, p.zip, p.property_type as "propertyType", p.beds, p.baths::text as baths, p.sqft,
       p.year_built as "yearBuilt", p.occupancy, p.condition, p.data_source as "dataSource", p.is_sample as "isSample",
-      p.updated_at as "updatedAt", p.owner_name as "ownerName", p.estimated_value as "estimatedValue",
+      p.updated_at as "updatedAt", p.owner_name as "ownerName", p.estimated_value as "estimatedValue", p.distress_flags as "flags",
       l.stage, l.id as "leadId", a.arv, a.max_allowable_offer as mao, a.deal_score as "dealScore"
     from properties p
     left join lateral (select * from leads where property_id = p.id order by updated_at desc limit 1) l on true
@@ -412,7 +412,7 @@ export async function listProperties(q?: string) {
   `)) as unknown as {
     id: string; street: string; city: string; zip: string; propertyType: string; beds: number | null; baths: string | null;
     sqft: number | null; yearBuilt: number | null; occupancy: string; condition: string; dataSource: string; isSample: boolean;
-    updatedAt: string; ownerName: string | null; estimatedValue: number | null; stage: LeadStage | null; leadId: string | null;
+    updatedAt: string; ownerName: string | null; estimatedValue: number | null; flags: string[]; stage: LeadStage | null; leadId: string | null;
     arv: number | null; mao: number | null; dealScore: number | null;
   }[];
 }

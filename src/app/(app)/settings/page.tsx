@@ -29,7 +29,8 @@ export default async function SettingsPage() {
             <div className="divide-y divide-line px-3.5 py-1">
               <DataRow label="External communications" value={external ? <Badge tone="warning">Enabled</Badge> : <Badge tone="neutral">Off · kill switch</Badge>} />
               <DataRow label="Paid AI actions" value={<Badge tone="neutral">Off · Phase 5</Badge>} />
-              <DataRow label="DealMachine" value={<Badge tone="neutral">Not connected · Phase 2</Badge>} />
+              <DataRow label="DealMachine" value={process.env.DEALMACHINE_API_KEY ? <Badge tone="positive">Connected</Badge> : <Badge tone="warning">API key not set</Badge>} />
+              <DataRow label="DealMachine webhooks" value={process.env.DEALMACHINE_WEBHOOK_SECRET ? <Badge tone="positive">Signing secret set</Badge> : <Badge tone="neutral">Not configured</Badge>} />
               <DataRow label="Twilio" value={<Badge tone="neutral">Not connected · Phase 4</Badge>} />
               <DataRow label="Properties stored" value={stats.props.toLocaleString("en-US")} />
               <DataRow label="Audit log entries" value={stats.audits.toLocaleString("en-US")} hint={stats.lastAudit ? `last ${relTime(stats.lastAudit)}` : undefined} />

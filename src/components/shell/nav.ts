@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Users, Building2, MessagesSquare, Kanban, Calculator, HandCoins, FileSignature,
-  ClipboardCheck, ChartColumn, Workflow, Settings, type LucideIcon,
+  ClipboardCheck, ChartColumn, Workflow, Settings, Radar, type LucideIcon,
 } from "lucide-react";
 
 export interface NavItem {
@@ -17,6 +17,7 @@ export const NAV: { section?: string; items: NavItem[] }[] = [
       { href: "/", label: "Overview", icon: LayoutDashboard, shortcut: "G O" },
       { href: "/leads", label: "Leads", icon: Users, shortcut: "G L" },
       { href: "/properties", label: "Properties", icon: Building2, shortcut: "G R" },
+      { href: "/prospecting", label: "Prospecting", icon: Radar, shortcut: "G D" },
       { href: "/conversations", label: "Conversations", icon: MessagesSquare, phase: 4 },
       { href: "/pipeline", label: "Pipeline", icon: Kanban, shortcut: "G P" },
     ],
