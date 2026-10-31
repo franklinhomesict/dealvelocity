@@ -9,7 +9,7 @@
 | Roles | `owner` (approvals, assumptions) · `acquisitions` (edit) · `viewer` (read-only) | Approval gate enforced server-side |
 | Underwriting | Pure TypeScript functions, versioned (`brrrr-1.0.0`), every save is an immutable `analyses` row with inputs + assumptions | Deterministic, auditable, unit-tested; no AI arithmetic |
 | Jobs (Phase 4+) | PostgreSQL-backed queue (pg-boss style) with idempotency keys | No Redis/n8n; retries can’t duplicate outbound messages |
-| Hosting (recommended) | Render or Railway: web service + managed Postgres with PITR backups (~$25–45/mo to start) | Commercially licensed, 24/7, background workers supported |
+| Hosting | Self-hosted Docker stack (`compose.yaml`) on Oracle Cloud Always Free: PostgreSQL 16, app, Caddy auto-HTTPS, nightly pg_dump | $0/month, commercial use allowed, 24/7, data stays on a server you control; Vercel Hobby is non-commercial only |
 
 ## Underwriting model (BRRRR)
 - All-in = price + rehab + contingency + purchase closing + points + interest carry + holding taxes/insurance.

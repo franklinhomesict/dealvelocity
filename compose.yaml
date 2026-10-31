@@ -1,0 +1,80 @@
+# Self-hosted stack: PostgreSQL + app + Caddy (automatic HTTPS) + nightly backups.
+# Usage: cp deploy/env.production.example .env.production && edit, then
+#        docker compose --env-file .env.production up -d --build
+name: acquisition-os
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: acq_os
+      POSTGRES_USER: acq
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env.production}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U acq -d acq_os"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    # Not published to the internet: only the app and backup containers can reach it.
+
+  app:
+    build: .
+    image: acquisition-os-app:latest
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://acq:${POSTGRES_PASSWORD}@db:5432/acq_os
+      SESSION_SECRET: ${SESSION_SECRET:?set SESSION_SECRET}
+      EXTERNAL_ACTIONS_ENABLED: ${EXTERNAL_ACTIONS_ENABLED:-false}
+      DEALMACHINE_API_KEY: ${DEALMACHINE_API_KEY:-}
+      DEALMACHINE_WEBHOOK_SECRET: ${DEALMACHINE_WEBHOOK_SECRET:-}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/health >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL (used for Let's Encrypt notices)}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+  backup:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGHOST: db
+      PGUSER: acq
+      PGDATABASE: acq_os
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS:-14}
+      TZ: America/Chicago
+    entrypoint: ["sh", "/deploy/backup-loop.sh"]
+    volumes:
+      - ./backups:/backups
+      - ./deploy:/deploy:ro
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:

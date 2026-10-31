@@ -9,6 +9,9 @@ Acquisition CRM + underwriting platform for Home Buyers ICT (Wichita, KS). BRRRR
 ## Stack
 Next.js 15 (App Router, server actions) · TypeScript · PostgreSQL 16 via Drizzle ORM · Tailwind with design tokens · Geist type · Lucide icons · Vitest + Playwright.
 
+## Production hosting ($0/month)
+Self-hosted on a free Oracle Cloud server with Docker: PostgreSQL, app, automatic HTTPS and nightly backups. Step-by-step: [docs/SELF_HOSTING.md](docs/SELF_HOSTING.md).
+
 ## Local setup
 ```bash
 cp .env.example .env.local          # set DATABASE_URL
