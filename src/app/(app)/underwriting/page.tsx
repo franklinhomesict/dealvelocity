@@ -24,7 +24,7 @@ export default async function UnderwritingPage() {
     <div className="pb-10">
       <PageHeader
         title="Underwriting"
-        meta={`Assumptions updated ${relTime(updatedAt)} · ${values.cashOutLtvPct}% cash-out · DSCR ${values.dscrMin.toFixed(2)} · ${values.refiRatePct}%`}
+        meta={`Buy box $${values.buyBoxMinArv / 1000}K–$${values.buyBoxMaxArv / 1000}K ARV · rent ≥ ${values.buyBoxMinRentPct}% · $${values.minMonthlyCashFlow}+/mo · DSCR ${Math.max(values.dscrMin, values.targetDscr).toFixed(2)} · ≤ $${values.maxCashLeftInDeal / 1000}K left in · updated ${relTime(updatedAt)}`}
         actions={<Link href="/settings#assumptions" className="text-sm text-fg-2 hover:text-fg">Edit assumptions →</Link>}
       />
       <div className="space-y-4 px-4 pt-4 md:px-6">

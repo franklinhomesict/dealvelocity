@@ -8,7 +8,7 @@
  */
 import type { Assumptions } from "./assumptions";
 
-export const ENGINE_VERSION = "brrrr-1.0.0";
+export const ENGINE_VERSION = "brrrr-1.1.0";
 
 export interface DealInputs {
   purchasePrice: number | null; // the price being evaluated (offer or asking)
@@ -85,6 +85,14 @@ export interface StressResult {
   passes: boolean;
 }
 
+export interface BuyBoxCheck {
+  code: "arv_range" | "rent_ratio" | "rehab" | "forced_equity" | "cash_left" | "cash_flow" | "dscr";
+  label: string;
+  target: string;
+  actual: string;
+  pass: boolean;
+}
+
 export interface BrrrrResult {
   engineVersion: string;
   complete: boolean;
@@ -98,6 +106,15 @@ export interface BrrrrResult {
   recommendedOffer: number | null;
   stress: StressResult[];
   dealScore: number | null;
+  /** Owner buy-box screen. A deal outside it is never auto-passed. */
+  buyBox: BuyBoxCheck[];
+  inBuyBox: boolean | null;
+  /**
+   * Cash-out play: refinance sized only by lender limits (LTV, lender DSCR).
+   * Qualifies when all cash comes back and cash flow stays ≥ $0 — rare deals
+   * worth taking even outside the cash-flow buy box (e.g. 1914 S Prescott Cir).
+   */
+  cashOutPlay: { mao: number | null; qualifies: boolean; cashBack: number; monthlyCashFlow: number; dscr: number } | null;
   verdict: "pass" | "review" | "fail";
   verdictReasons: string[];
 }
@@ -201,7 +218,8 @@ function refiScenario(
 
   // DSCR = qualifying rent / PITIA ≥ dscrMin  →  max P&I the rent supports
   const pitiaFixed = op.taxes + op.insurance + op.hoa;
-  const maxPI = op.qualifyingRent / a.dscrMin - pitiaFixed;
+  // Size to the stricter of the lender minimum and the owner's target.
+  const maxPI = op.qualifyingRent / Math.max(a.dscrMin, a.targetDscr) - pitiaFixed;
   const maxLoanByDscr = Math.max(0, principalForPayment(maxPI, a.refiRatePct, a.refiAmortYears));
 
   // Size down rather than take a loan that breaks the cash-flow minimum.
@@ -291,8 +309,8 @@ function evaluateAt(purchase: number, arv: number, rehab: number, rent: number, 
 /** A purchase price is acceptable when the cash-out refi meets every criterion. */
 function meetsCriteria(s: RefiScenario, a: Assumptions): boolean {
   return (
-    s.cashRemainingInDeal <= -a.targetCashOut + 0.5 &&
-    s.dscr >= a.dscrMin - 1e-9 &&
+    s.cashRemainingInDeal <= a.maxCashLeftInDeal + 0.5 &&
+    s.dscr >= Math.max(a.dscrMin, a.targetDscr) - 1e-9 &&
     s.monthlyCashFlow >= a.minMonthlyCashFlow - 1e-9
   );
 }
@@ -355,6 +373,9 @@ export function analyzeBrrrr(i: DealInputs, a: Assumptions): BrrrrResult {
     dealScore: null,
     verdict: "review",
     verdictReasons: ["Missing required underwriting inputs"],
+    buyBox: [],
+    inBuyBox: null,
+    cashOutPlay: null,
   };
   if (!hasArv || !hasRehab || !hasRent) return empty;
 
@@ -398,8 +419,10 @@ export function analyzeBrrrr(i: DealInputs, a: Assumptions): BrrrrResult {
     { label: "Rent −10%", arv, rehab, rent: rent * 0.9 },
     { label: "Combined", arv: arv * 0.9, rehab: rehab * 1.2, rent: rent * 0.9 },
   ];
+  // A lower appraisal doesn't lower the tax or insurance bill: hold those at base.
+  const stressInputs: DealInputs = { ...i, taxesMonthlyOverride: ev.op.taxes, insuranceMonthlyOverride: ev.op.insurance };
   const stress: StressResult[] = stressCases.map((s) => {
-    const e = evaluateAt(evalPrice, s.arv, s.rehab, s.rent, a, i).cashOut;
+    const e = evaluateAt(evalPrice, s.arv, s.rehab, s.rent, a, stressInputs).cashOut;
     return {
       label: s.label,
       cashRemainingInDeal: e.cashRemainingInDeal,
@@ -438,7 +461,32 @@ export function analyzeBrrrr(i: DealInputs, a: Assumptions): BrrrrResult {
     verdict = "review";
     reasons.push("Heavy rehab scope needs verification");
   }
-  if (verdict === "pass") reasons.push("Meets cash-out, DSCR and cash-flow criteria with stress margin");
+  const buyBox = evaluateBuyBox(arv, rehab, rent, ev.cashOut, a, ev.costs.allInCost);
+  const misses = buyBox.filter((b) => !b.pass);
+  // Cash-out play: lender limits only, all cash back, non-negative cash flow.
+  const co: Assumptions = { ...a, targetDscr: a.dscrMin, minMonthlyCashFlow: 0, maxCashLeftInDeal: 0 };
+  const coMao = solveMaxAllowableOffer(arv, rehab, rent, co, i);
+  const coEval = evaluateAt(evalPrice, arv, rehab, rent, co, i).cashOut;
+  const cashOutPlay = {
+    mao: coMao,
+    qualifies: hasPrice && coEval.cashRemainingInDeal <= 0.5 && coEval.monthlyCashFlow >= 0 && coEval.dscr >= a.dscrMin - 1e-9,
+    cashBack: Math.max(0, -coEval.cashRemainingInDeal),
+    monthlyCashFlow: coEval.monthlyCashFlow,
+    dscr: coEval.dscr,
+  };
+
+  if (misses.length) {
+    const missText = misses.map((m) => m.label.toLowerCase()).join(", ");
+    if (cashOutPlay.qualifies && verdict !== "fail") {
+      verdict = "pass";
+      reasons.length = 0;
+      reasons.push(`Cash-out play: about $${round(cashOutPlay.cashBack).toLocaleString("en-US")} back at refi with $${round(cashOutPlay.monthlyCashFlow).toLocaleString("en-US")}/mo cash flow — rare; outside buy box (${missText})`);
+    } else {
+      if (verdict === "pass") verdict = "review";
+      reasons.push(`Outside buy box: ${missText}`);
+    }
+  }
+  if (verdict === "pass" && misses.length === 0) reasons.push("Inside buy box; meets cash-left, DSCR and cash-flow criteria with stress margin");
 
   const dealScore = scoreDeal({ mao, price: hasPrice ? evalPrice : null, arv, s: ev.cashOut, stress, a });
 
@@ -457,7 +505,28 @@ export function analyzeBrrrr(i: DealInputs, a: Assumptions): BrrrrResult {
     dealScore,
     verdict,
     verdictReasons: reasons,
+    buyBox,
+    inBuyBox: misses.length === 0,
+    cashOutPlay,
   };
+}
+
+const usd = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
+
+/** Evaluates the owner's buy box at the analyzed price. */
+export function evaluateBuyBox(arv: number, rehab: number, rent: number, s: RefiScenario, a: Assumptions, allInCost: number): BuyBoxCheck[] {
+  const rentPct = (rent / arv) * 100;
+  const forced = arv - allInCost;
+  const dscrTarget = Math.max(a.dscrMin, a.targetDscr);
+  return [
+    { code: "arv_range", label: "ARV range", target: `${usd(a.buyBoxMinArv)}–${usd(a.buyBoxMaxArv)}`, actual: usd(arv), pass: arv >= a.buyBoxMinArv && arv <= a.buyBoxMaxArv },
+    { code: "rent_ratio", label: "Rent ratio", target: `≥ ${a.buyBoxMinRentPct.toFixed(2)}%`, actual: `${rentPct.toFixed(2)}%`, pass: rentPct >= a.buyBoxMinRentPct - 1e-9 },
+    { code: "rehab", label: "Rehab", target: `≤ ${usd(a.buyBoxMaxRehab)}`, actual: usd(rehab), pass: rehab <= a.buyBoxMaxRehab },
+    { code: "forced_equity", label: "Forced equity", target: `≥ ${a.buyBoxMinForcedEquityPct}% of ARV`, actual: `${usd(forced)} (${((forced / arv) * 100).toFixed(1)}%)`, pass: (forced / arv) * 100 >= a.buyBoxMinForcedEquityPct - 1e-9 },
+    { code: "cash_left", label: "Cash left in deal", target: `≤ ${usd(a.maxCashLeftInDeal)}`, actual: usd(Math.max(0, s.cashRemainingInDeal)), pass: s.cashRemainingInDeal <= a.maxCashLeftInDeal + 0.5 },
+    { code: "cash_flow", label: "Cash flow", target: `≥ ${usd(a.minMonthlyCashFlow)}/mo`, actual: `${usd(s.monthlyCashFlow)}/mo`, pass: s.monthlyCashFlow >= a.minMonthlyCashFlow - 0.5 },
+    { code: "dscr", label: "DSCR", target: `≥ ${dscrTarget.toFixed(2)}`, actual: Number.isFinite(s.dscr) ? s.dscr.toFixed(2) : "∞", pass: s.dscr >= dscrTarget - 1e-9 },
+  ];
 }
 
 /**

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Info, RotateCcw, CircleSlash } from "lucide-react";
+import { AlertTriangle, Info, RotateCcw, CircleSlash, Check, X } from "lucide-react";
 import { analyzeBrrrr, analyzeFlip, type BrrrrResult, type RefiScenario } from "@/lib/underwriting/engine";
 import type { Assumptions } from "@/lib/underwriting/assumptions";
 import { money, percent, ratio, relTime } from "@/lib/format";
@@ -171,6 +171,36 @@ function Flags({ r }: { r: { flags: BrrrrResult["flags"] } }) {
   );
 }
 
+function BuyBox({ r }: { r: BrrrrResult }) {
+  if (!r.buyBox?.length) return null;
+  return (
+    <div className="border-b border-line px-3.5 py-2.5">
+      <div className="mb-1.5 flex items-center gap-2">
+        <span className="eyebrow">Buy box</span>
+        {r.inBuyBox ? <Badge tone="positive">Inside</Badge> : <Badge tone="warning">{r.buyBox.filter((b) => !b.pass).length} outside</Badge>}
+        {!r.inBuyBox && r.cashOutPlay?.qualifies && <Badge tone="positive" dot>Cash-out play</Badge>}
+      </div>
+      {!r.inBuyBox && r.cashOutPlay?.qualifies && (
+        <p className="mb-2 text-sm text-fg-2">
+          Outside your cash-flow buy box, but a full cash-out refi returns about <span className="num font-medium text-pos">{money(r.cashOutPlay.cashBack)}</span> with{" "}
+          <span className="num font-medium">{money(r.cashOutPlay.monthlyCashFlow)}/mo</span> cash flow (lender limits only). Rare — worth taking.
+        </p>
+      )}
+      <ul className="grid grid-cols-1 gap-x-6 gap-y-1 sm:grid-cols-2 lg:grid-cols-3">
+        {r.buyBox.map((b) => (
+          <li key={b.code} className="flex items-center justify-between gap-2 text-sm" title={`Target ${b.target}`}>
+            <span className="flex items-center gap-1.5 text-fg-2">
+              {b.pass ? <Check className="h-3.5 w-3.5 text-pos" /> : <X className="h-3.5 w-3.5 text-warn" />}
+              {b.label}
+            </span>
+            <span className={cn("num", b.pass ? "text-fg" : "text-warn")}>{b.actual}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function BrrrrView({ r, s, refi, setRefi, purchase, a }: { r: BrrrrResult; s: RefiScenario | null; refi: "cash_out" | "rate_term"; setRefi: (x: "cash_out" | "rate_term") => void; purchase: number | null; a: Assumptions }) {
   if (!r.complete || !s || !r.costs || !r.operating) {
     return (
@@ -206,6 +236,7 @@ function BrrrrView({ r, s, refi, setRefi, purchase, a }: { r: BrrrrResult; s: Re
       </div>
 
       <Flags r={r} />
+      <BuyBox r={r} />
 
       <div className="grid md:grid-cols-2 md:divide-x md:divide-line">
         {/* Cost stack */}

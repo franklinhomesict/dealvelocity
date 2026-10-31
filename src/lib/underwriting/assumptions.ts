@@ -45,8 +45,16 @@ export const assumptionsSchema = z.object({
   hoaMonthly: z.number().min(0),
 
   // Investment criteria
-  targetCashOut: z.number(), // positive = owner wants cash back at refi
+  maxCashLeftInDeal: z.number().min(0), // owner capital allowed to stay in after refi
   minMonthlyCashFlow: z.number(),
+  targetDscr: z.number().min(0.5).max(3), // owner's DSCR target (lender minimum is dscrMin)
+
+  // Buy box (screening). Deals outside it are flagged for review, never auto-passed.
+  buyBoxMinArv: z.number().min(0),
+  buyBoxMaxArv: z.number().min(0),
+  buyBoxMinRentPct: z.number().min(0).max(5), // monthly rent as % of ARV
+  buyBoxMaxRehab: z.number().min(0),
+  buyBoxMinForcedEquityPct: z.number().min(0).max(100), // (ARV − all-in) ÷ ARV
 
   // Flip pathway
   flipSellingCostsPct: z.number().min(0).max(20),
@@ -87,8 +95,17 @@ export const DEFAULT_ASSUMPTIONS: Assumptions = {
   utilitiesMonthly: 0,
   hoaMonthly: 0,
 
-  targetCashOut: 0,
-  minMonthlyCashFlow: 150,
+  // Owner's buy box, calibrated on 906 N Pershing (bought $70K, $15K rehab,
+  // appraised $114K, rent $1,250): up to $20K left in, $300+/mo cash flow.
+  maxCashLeftInDeal: 20000,
+  minMonthlyCashFlow: 300,
+  targetDscr: 1.35,
+
+  buyBoxMinArv: 90000,
+  buyBoxMaxArv: 170000,
+  buyBoxMinRentPct: 0.9,
+  buyBoxMaxRehab: 50000, // value-add welcome; MAO already prices the rehab
+  buyBoxMinForcedEquityPct: 15,
 
   flipSellingCostsPct: 8,
   flipHoldMonths: 6,
@@ -130,8 +147,14 @@ export const ASSUMPTION_META: Record<
   managementPct: { label: "Property management", group: "Operating", unit: "%" },
   utilitiesMonthly: { label: "Owner-paid utilities", group: "Operating", unit: "$" },
   hoaMonthly: { label: "HOA", group: "Operating", unit: "$" },
-  targetCashOut: { label: "Target cash out at refi", group: "Criteria", unit: "$" },
+  maxCashLeftInDeal: { label: "Max cash left in deal", group: "Criteria", unit: "$", help: "Owner capital allowed to remain after the refinance" },
   minMonthlyCashFlow: { label: "Minimum cash flow / mo", group: "Criteria", unit: "$" },
+  targetDscr: { label: "Target DSCR", group: "Criteria", unit: "x", help: "Your target; the lender minimum is set under Refinance" },
+  buyBoxMinArv: { label: "Min ARV", group: "Buy box", unit: "$" },
+  buyBoxMaxArv: { label: "Max ARV", group: "Buy box", unit: "$" },
+  buyBoxMinRentPct: { label: "Min rent (% of ARV / mo)", group: "Buy box", unit: "%" },
+  buyBoxMaxRehab: { label: "Max rehab", group: "Buy box", unit: "$" },
+  buyBoxMinForcedEquityPct: { label: "Min forced equity (% of ARV)", group: "Buy box", unit: "%", help: "ARV minus all-in cost: the value your rehab creates" },
   flipSellingCostsPct: { label: "Selling costs", group: "Flip", unit: "%" },
   flipHoldMonths: { label: "Flip hold period", group: "Flip", unit: "mo" },
   flipMinProfit: { label: "Minimum flip profit", group: "Flip", unit: "$" },

@@ -23,7 +23,8 @@ const prop = (i, enriched) => {
     ...base, property_type: "Single Family", year_built: 1940 + (i % 30), estimated_value: 110000 + i * 2500,
     estimated_equity_percentage: 40 + (i % 60), estimated_equity_amount: 60000 + i * 1000, estimated_repair_cost: 18000 + (i % 7) * 4000,
     assessed_total_value: 70000 + i * 900, last_sale_price: 30000 + i * 800, last_sale_date: "2006-04-12T00:00:00.000Z",
-    owner_1_full_name: `TEST OWNER ${i}`, is_vacant_home: i % 2 === 0, has_absentee_owners: i % 3 === 0, is_pre_probate: i % 5 === 0,
+    owner_1_full_name: `TEST OWNER ${i}`, // Enriched/search records send signals as "Yes"/"No" strings (live shape).
+    is_vacant_home: i % 2 === 0 ? "Yes" : "No", has_absentee_owners: i % 3 === 0 ? "Yes" : "No", is_pre_probate: i % 5 === 0 ? "Yes" : "No",
   };
 };
 const TOTAL = 40;

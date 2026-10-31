@@ -199,3 +199,32 @@ describe("pagination", () => {
     expect(seen).toEqual(Array.from({ length: 40 }, (_, i) => i));
   });
 });
+
+// Real enriched record (906 N Pershing St, owned by Home Buyers ICT), captured 2026-10-31.
+const ENRICHED = {
+  dm_property_id: "prop_56232317", full_address: "906 N Pershing St Wichita, KS 67208", address: "906 N Pershing St", city: "Wichita", state: "KS", zip: "67208",
+  latitude: 37.699524, longitude: -97.282624, estimated_value: 107000, estimated_equity_amount: 15885, estimated_equity_percentage: 30, year_built: 1943,
+  living_area_sqft: 860, lot_size_sqft: 6994, num_bedrooms: 2, num_bathrooms: 1, last_sale_date: "2026-03-05", last_sale_amount: 113050,
+  total_assessed_value: 8970, annual_property_tax_amount: 843, owner_occupied: false, apn: "126-14-0-41-02-011.00", estimated_repair_cost: 30100,
+  last_sale_price: 113050, owner_1_full_name: "HOME BUYERS ICT LLC", is_vacant_home: "No", has_absentee_owners: "No", is_tax_delinquent: "No",
+  is_pre_probate: "No", has_tired_landlords: "No", building_condition: "Average", tax_amount: "$843.00", market_status: "Sold", assessed_total_value: 8970,
+};
+
+describe("mapper · live enriched shape", () => {
+  it("maps the real enriched record", () => {
+    const m = mapDmProperty(ENRICHED);
+    expect(m).toMatchObject({ beds: 2, sqft: 860, yearBuilt: 1943, estimatedValue: 107000, estimatedRepairCost: 30100, assessedValue: 8970, lastSalePrice: 113050, lastSaleDate: "2026-03-05", apn: "126-14-0-41-02-011.00", ownerName: "HOME BUYERS ICT LLC" });
+    expect(m.distressFlags).toEqual([]);
+  });
+  it('reads "Yes"/"No" signals (search results) as booleans', () => {
+    const m = mapDmProperty({ ...ENRICHED, is_vacant_home: "Yes", has_absentee_owners: "Yes", is_tax_delinquent: "Yes", is_pre_probate: "No", has_tired_landlords: "Yes", owner_occupied: undefined, is_owner_occupied: "No" });
+    expect(m.distressFlags).toEqual(["vacant", "absentee", "tax_delinquent", "tired_landlord"]);
+    expect(m.occupancy).toBe("vacant");
+  });
+  it("falls back to last_sale_amount and total_assessed_value", () => {
+    const { last_sale_price: _a, assessed_total_value: _b, ...rest } = ENRICHED;
+    const m = mapDmProperty(rest);
+    expect(m.lastSalePrice).toBe(113050);
+    expect(m.assessedValue).toBe(8970);
+  });
+});

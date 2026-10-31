@@ -50,7 +50,22 @@ const dec = (v: unknown, digits = 2): string | null => {
   return Number.isFinite(n) ? n.toFixed(digits) : null;
 };
 const str = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v.trim() : null);
-const bool = (v: unknown): boolean | null => (v === true || v === "true" || v === 1 ? true : v === false || v === "false" || v === 0 ? false : null);
+/** DealMachine returns booleans as true/false on free records and "Yes"/"No" on enriched ones. */
+const bool = (v: unknown): boolean | null => {
+  if (v === true || v === 1) return true;
+  if (v === false || v === 0) return false;
+  if (typeof v === "string") {
+    const t = v.trim().toLowerCase();
+    if (t === "yes" || t === "true" || t === "y") return true;
+    if (t === "no" || t === "false" || t === "n") return false;
+  }
+  return null;
+};
+/** First non-empty value among field aliases (enriched records use different names). */
+const first = (r: Record<string, unknown>, ...keys: string[]) => {
+  for (const k of keys) if (r[k] != null && r[k] !== "") return r[k];
+  return null;
+};
 const date = (v: unknown): string | null => {
   const s = str(v);
   if (!s) return null;
@@ -109,7 +124,7 @@ export function mapDmProperty(r: DmProperty): MappedProperty {
     throw new Error(`DealMachine record ${r.dm_property_id ?? "(no id)"} is missing an address`);
   }
   const units = int(r.num_units);
-  const owner = bool(r.is_owner_occupied);
+  const owner = bool(first(r, "is_owner_occupied", "owner_occupied"));
   const vacant = bool(r.is_vacant_home);
   const absentee = bool(r.has_absentee_owners);
   return {
@@ -127,11 +142,11 @@ export function mapDmProperty(r: DmProperty): MappedProperty {
     sqft: int(r.living_area_sqft),
     lotSqft: int(r.lot_size_sqft),
     yearBuilt: int(r.year_built),
-    apn: str(r.parcel_number_raw),
+    apn: str(first(r, "parcel_number_raw", "apn")),
     ownerName: [str(r.owner_1_full_name), str(r.owner_2_full_name)].filter(Boolean).join(" & ") || null,
     occupancy: vacant ? "vacant" : owner ? "owner_occupied" : absentee ? "tenant_occupied" : null,
-    assessedValue: int(r.assessed_total_value),
-    lastSalePrice: int(r.last_sale_price) || null,
+    assessedValue: int(first(r, "assessed_total_value", "total_assessed_value")),
+    lastSalePrice: int(first(r, "last_sale_price", "last_sale_amount")) || null,
     lastSaleDate: date(r.last_sale_date),
     estimatedValue: int(r.estimated_value),
     estimatedRepairCost: int(r.estimated_repair_cost),
