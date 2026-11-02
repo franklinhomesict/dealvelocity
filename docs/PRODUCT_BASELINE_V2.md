@@ -480,3 +480,18 @@ All twelve are **accepted** (two with a modification). They amend `SPEC_RELEASE_
 12. **Manageability (modified):**
     - Agreed: the entity list is logical. Constrained configuration, reviewed changes, manual actuals comparison and simple attribution (including "unknown") ship first.
     - **Modified:** owner clarification lifts the release-1 AI exclusion. The guardrails stay, but AI moves into Stage A.
+
+---
+
+## Appendix B: Owner answers log (Nov 2, 2026)
+
+| Topic | Owner answer |
+|---|---|
+| Acquisition financing | SB Investments (Brandon Lacey): 1.5%/mo, 3-month minimum, 6-month term, ~$500 processing **rolled into the loan**, 100% purchase + rehab → **$0 owner cash up front**. CV3 bridge via Christy (primary going forward, quoted 9–12%, $350/draw reimbursement). Other lenders: 90% purchase / 100% rehab, some reimburse rehab from receipts |
+| Lender capacity | Unknown; largest loan so far was $140k (1914 Prescott) |
+| Refinance | Through Christy (MLO, Planted Local Lending): MyLoanPathway/CV3, 6.37% 30-yr (actual Pershing/Prescott, 5/12/26). **Planning defaults: 75% LTV cash-out, 80% LTV rate-and-term**; use actual lender quotes when available. $75k minimum loan |
+| Wellington | 110 W 12th appraised $64k. Two more houses closing ~Nov 3, 2026: **$15k purchase + $35k rehab each** (full electric, plumbing, HVAC), rent $850–900, hoped-for ARV $85–90k. **The owner prefers cash flow over cash-out on these**; plans a two-house refinance (rate-and-term, ~$5k out each). Hard money due ~early May 2027 |
+| Rehab | **TenanTurn** does the rehabs; ~3 weeks typical (longer for full-systems jobs); **5–6 concurrent** plus part-time crews (e.g., Gerardo) |
+| Budget | **As cheap as possible.** DealMachine plan includes skip tracing (via API too) and mail. New spend ≈ Twilio + AI usage only |
+| Staffing | **No VA. AI-run**, using DealMachine, Claude, ChatGPT, Vercel |
+| First contact | **AI cold email** (separate sending domain) + **owner cold calls** (AI-built queue, DNC scrub, live notes) + **website homebuyersict.com [confirm domain]**. **No cold texting.** After a seller responds, the AI continues and **asks permission before texting** (recorded consent) → Twilio SMS. The owner finishes and signs |
