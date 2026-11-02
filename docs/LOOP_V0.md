@@ -65,3 +65,9 @@ Two engine defects are fixed in v0 because they affect deal decisions:
 2. Hosting: **Vercel Pro + managed Postgres** (recommended) vs. continuing with Oracle.
 3. AI price authority (Question 14).
 4. AI replies: **approve each one at first, switching to auto-send after N good replies** (recommended), or auto-send from day one.
+
+## Decision log
+- **Nov 2, 2026, mailbox:** the app connects **directly** to `ian@homebuyersict.com` with its own Google sign-in (OAuth), stored server-side and never in code.
+  - The app's built-in AI (provider is swappable: Claude or ChatGPT) reads, drafts and sends through the app's policy gate, approval mode and logs.
+  - The coding assistants' own connectors stay on the TenanTurn / Franklin Homes accounts.
+  - Cold outreach sends from a separate look-alike domain. Replies and negotiations move to `ian@homebuyersict.com`.
