@@ -71,3 +71,4 @@ Two engine defects are fixed in v0 because they affect deal decisions:
   - The app's built-in AI (provider is swappable: Claude or ChatGPT) reads, drafts and sends through the app's policy gate, approval mode and logs.
   - The coding assistants' own connectors stay on the TenanTurn / Franklin Homes accounts.
   - Cold outreach sends from a separate look-alike domain. Replies and negotiations move to `ian@homebuyersict.com`.
+- **Nov 2, 2026, price authority:** **for now, the owner gives every number.** The AI gathers information and shows the owner the engine's MAO and a suggested offer, but it does not state prices to sellers. Once the owner has verified that the MAO is reliable on real deals, the AI may quote up to the MAO (owner-approved per deal).
