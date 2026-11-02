@@ -292,12 +292,16 @@ The controller proposes campaign volumes weekly. **The owner approves budget cha
 So **one closing needs ~67 leads**.
 - Blended cost per lead: **~$60**. This is a mix of mail (~$0.75/piece at ~1% response ≈ $75/lead), cold email (low cost, low response), human-dialed calls (~$20–40/lead with a VA) and inbound PPC (~$100–200/lead) [VERIFY local pricing].
 
-**Per-deal capital (Pershing-like):**
-- $70k purchase, $15k rehab, 100% private money at 12% with 2 points, 6-month hold.
-- Owner liquidity ≈ **$12–15k** (closing, points, interest, carry, plus reserves).
-- Lender capital ≈ **$90–95k**.
-- About **7 months** from contract to refinance.
-- Target cash left after refinance: ≤ $20k, aiming for ~$0.
+**Per-deal capital (Pershing-like), using the owner's real financing:**
+- Hard money from Brandon or other hard-money lenders at **1.5%/month (18%/yr) with a 3-month minimum interest**; typically **no owner cash up front**.
+- $70k purchase and $15k rehab, financed. Interest ≈ $1,300/mo, so 6 months ≈ **$7.8k**, paid at payoff or monthly [VERIFY].
+- **Owner liquidity ≈ $3–10k** per deal, depending on whether interest, closing costs and taxes/insurance are paid monthly or rolled into the payoff, plus reserves.
+- **Lender capital ≈ $90–95k** per deal; about 7 months from purchase to refinance.
+
+**Findings:**
+- Liquidity is lower than the original private-money assumption.
+- **The hard-money lenders' total capacity (dollars and loan count) becomes the binding constraint.**
+
 
 | Per month | **3 closings** | **10 closings** | **30 closings** |
 |---|---|---|---|
@@ -309,7 +313,7 @@ So **one closing needs ~67 leads**.
 | Skip trace + data | ~$0.5–1k | ~$2–3k | ~$6–10k |
 | Telephony + AI (voice minutes, SMS, LLM) [VERIFY] | ~$0.5–1k | ~$2–4k | ~$6–12k |
 | Deals in flight (×7 months) | ~21 | ~70 | ~210 |
-| **Owner liquidity tied up** (in-flight deals × ~$15k) | **~$315k** | **~$1.05M** | **~$3.2M** |
+| **Owner liquidity tied up** (in-flight deals × ~$3–10k) | **~$60–210k** | **~$210–700k** | **~$0.6–2.1M** |
 | **Private/lender capital in flight** (× ~$93k) | **~$2.0M** | **~$6.5M** | **~$19.5M** |
 | Concurrent rehabs (~2-month rehab) | ~6 | ~20 | ~60 |
 | Walkthroughs (≈ offers, 1.5 h each with driving) | ~38 h | ~126 h | ~375 h |
@@ -374,7 +378,14 @@ Each stage is usable on its own. Guardrails from Appendix A ship **with** the st
 - **D2:** Hosting: keep trying Oracle Always Free (Pay As You Go upgrade), or pay ~$20–40/mo for a VPS sized for real-time voice?
 - **D3:** Voice stack: build on Twilio + speech providers (control, cost), or use a voice-agent platform (speed)?
 - **D4:** Starting monthly budgets for data/enrichment, mail, and telephony/AI.
-- **D5:** The owner's capital and financing today (private money terms or cash; deployable capital; protected reserve) and at least one real refinance lender.
+- **D5:** Financing. **Partly answered:** hard money at 1.5%/mo, 3-month minimum, typically 100% financed. Still open:
+  - Points, or any fees?
+  - Is interest paid monthly or at payoff?
+  - Are closing costs and rehab financed up front, or reimbursed in draws?
+  - Loan caps (% of cost or % of ARV)?
+  - Total lending capacity per lender (dollars and number of loans at once)?
+  - Which refinance lender, and its terms?
+  - Deployable cash and protected reserve.
 
 **Before launch:**
 - **L1:** Attorney review: outreach policy matrix (§6), AI disclosure script, recording workflow, voice-clone authorization, purchase agreement template, envelope wording ("non-binding").
