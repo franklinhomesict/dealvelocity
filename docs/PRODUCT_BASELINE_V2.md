@@ -292,16 +292,32 @@ The controller proposes campaign volumes weekly. **The owner approves budget cha
 So **one closing needs ~67 leads**.
 - Blended cost per lead: **~$60**. This is a mix of mail (~$0.75/piece at ~1% response ≈ $75/lead), cold email (low cost, low response), human-dialed calls (~$20–40/lead with a VA) and inbound PPC (~$100–200/lead) [VERIFY local pricing].
 
-**Per-deal capital (Pershing-like), using the owner's real financing:**
-- Hard money from Brandon or other hard-money lenders at **1.5%/month (18%/yr) with a 3-month minimum interest**; typically **no owner cash up front**.
-- $70k purchase and $15k rehab, financed. Interest ≈ $1,300/mo, so 6 months ≈ **$7.8k**, paid at payoff or monthly [VERIFY].
-- **Owner liquidity ≈ $3–10k** per deal, depending on whether interest, closing costs and taxes/insurance are paid monthly or rolled into the payoff, plus reserves.
-- **Lender capital ≈ $90–95k** per deal; about 7 months from purchase to refinance.
+**Per-deal capital: the owner's verified financing**
+
+Source: the owner's "Lending Products Reference" doc, the SB promissory notes, and the payoff and closing figures.
+
+| Item | Verified terms |
+|---|---|
+| Purchase + rehab, primary | **CV3 bridge** via Christy (Planted Local Lending): 9–12% interest-only, quoted, not locked; **$350 per draw, reimbursement after paid invoices (the owner floats the rehab cash)**; up to 90% LTV with experience; no seasoning before refinance |
+| Purchase + rehab, backup | **SB Investments (Brandon Lacey)**: 18%/yr (1.5%/mo), 0 points, ~$500 processing rolled into the loan, 3-month minimum, then daily proration, 6-month term, no prepayment penalty; **100% of purchase + rehab funded up front or in 2 draws**; interest due at payoff; extension at the lender's discretion. Capacity unknown; largest loan $140k (Prescott) |
+| Purchase + rehab, other | Some lenders: 90% of purchase + 100% of rehab (owner pays ~10% down) |
+| Refinance, default | **MyLoanPathway / CV3** via Christy: **6.37% 30-yr fixed**; fees ≈ **3.75% of the loan + $2,776**; up to **80% LTV cash-out**; **no seasoning**; lender DSCR minimum 0.8; **minimum loan $75k**; experience rule applies |
+| Actual results | **Pershing:** $85k hard money → payoff $89,293 (≈ $4.3k interest) → $91,200 refinance at a $114k appraisal → **owner brought $6,259 to closing**. **Prescott:** $140k → payoff $147,192 → $180,000 refinance → **owner received $19,870**. Both bought 2/19/26 and refinanced 5/12/26 (**≈ 3 months**) |
+| Taxes and insurance (actual) | Taxes 0.65–1.12% of value/yr (use county records; default 0.75%); insurance ≈ $734/yr on Pershing (~0.6%) |
+
+**Per-deal capital (Pershing-like):**
+- Owner cash ≈ **$0 at purchase** with SB, or the rehab float with CV3 draws (up to the rehab amount for a few weeks).
+- About **–$6k to +$20k at refinance**.
+- Lender capital ≈ **$85–95k for ~3 months**.
 
 **Findings:**
-- Liquidity is lower than the original private-money assumption.
-- **The hard-money lenders' total capacity (dollars and loan count) becomes the binding constraint.**
-
+- Owner liquidity is small. **The binding constraint is total lender capacity**, made up of each lender's dollar and loan-count limits, plus the **$75k minimum refinance loan** (which matters for cheap Wellington houses).
+- **The engine defaults must change:**
+  - hold 3 months, not 6;
+  - seasoning 0;
+  - refinance at 6.37% with the actual fee structure and 80% LTV;
+  - taxes from county records;
+  - acquisition-lender profiles for SB and CV3.
 
 | Per month | **3 closings** | **10 closings** | **30 closings** |
 |---|---|---|---|
@@ -312,9 +328,9 @@ So **one closing needs ~67 leads**.
 | Lead-generation spend (@ $60/lead) | ~$12k | ~$40k | ~$120k |
 | Skip trace + data | ~$0.5–1k | ~$2–3k | ~$6–10k |
 | Telephony + AI (voice minutes, SMS, LLM) [VERIFY] | ~$0.5–1k | ~$2–4k | ~$6–12k |
-| Deals in flight (×7 months) | ~21 | ~70 | ~210 |
-| **Owner liquidity tied up** (in-flight deals × ~$3–10k) | **~$60–210k** | **~$210–700k** | **~$0.6–2.1M** |
-| **Private/lender capital in flight** (× ~$93k) | **~$2.0M** | **~$6.5M** | **~$19.5M** |
+| Deals in flight (≈3-month buy-to-refinance cycle + ~1 month to close) | ~12 | ~40 | ~120 |
+| **Owner liquidity tied up** (rehab float on reimbursement loans + refinance cash-in; ~$0–15k per deal) | **~$0–180k** | **~$0–600k** | **~$0–1.8M** |
+| **Hard-money capital in flight** (× ~$93k) | **~$1.1M** | **~$3.7M** | **~$11M** |
 | Concurrent rehabs (~2-month rehab) | ~6 | ~20 | ~60 |
 | Walkthroughs (≈ offers, 1.5 h each with driving) | ~38 h | ~126 h | ~375 h |
 | Owner approvals + contract review (20 min/offer + 2 h/contract) | ~16 h | ~53 h | ~158 h → **must delegate** |
@@ -323,7 +339,7 @@ So **one closing needs ~67 leads**.
 | **Human team** | Owner + part-time field rep | Owner + acquisitions/field rep + transaction coordinator + rehab PM | Acquisitions manager, 3–4 field reps, 2–3 coordinators, rehab PMs, capital relations |
 
 **Findings:**
-1. **Capital, not leads, is the binding constraint above ~3/month.** About 10/mo requires roughly $6M+ of revolving lender capital and ~$1M of owner liquidity in flight. The roadmap therefore includes **capital tracking** (lender capacity and commitments) early, and a **capital-partner module** before scaling.
+1. **Capital, not leads, is the binding constraint above ~3/month.** About 10/mo needs roughly $3.7M of revolving hard-money capacity across lenders (at the owner's verified ~3-month cycle), plus a refinance lender willing to do ~10 loans/month. The roadmap therefore includes **capital tracking** (lender capacity and commitments) early, and a **capital-partner module** before scaling.
 2. **Rehab capacity is next.** About 20–60 concurrent rehabs. The owner's construction business (Franklin Homes, JobTread) is an advantage; the integration is in the roadmap.
 3. **Owner time stops scaling at around 10/mo** unless approvals move to envelopes and delegated authority with audit (a future owner decision).
 4. **AI's biggest leverage** is in the speed and consistency of conversations, follow-up and evidence assembly: the steps with the highest volume and lowest judgment.
